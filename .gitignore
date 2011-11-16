@@ -1,0 +1,31 @@
+.*
+.DS_Store
+*.coverage
+*.egg-info
+*.log
+
+# ignore vim swp files and gedit temp files
+*.swp
+*.*~
+
+# ignore python compiled files
+*.pyc
+*.pyo
+
+*.zip
+*.cc
+*/files/*
+*/tmp/*
+*.hwm*
+*.cfg
+.svn
+build
+bin
+lib
+cpp
+*/lib/*
+installed
+patched
+wiped
+msg_gen
+srv_gen
