@@ -1,9 +1,9 @@
 <stack>
-  <description brief="ucla-robomagellan">ucla-robomagellan</description>
+  <description brief="ucla-robomagellan">UCLA-robomagellan</description>
   <author>Maintained by Garrett Brown</author>
   <license>BSD</license>  
   <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/ucla-robomagellan</url>
+  <url>http://ros.org/wiki/UCLA-robomagellan</url>
   <depend stack="ros" />
 
 </stack>
