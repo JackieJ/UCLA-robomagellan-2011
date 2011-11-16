@@ -5,7 +5,7 @@ project(AX3500)
 
 ## Configurations
 
-option(AX3500_BUILD_TESTS "Build all of the AX3500 tests." OFF)
+#option(AX3500_BUILD_TESTS "Build all of the AX3500 tests." OFF)
 
 # Allow for building shared libs override
 IF(NOT BUILD_SHARED_LIBS)
@@ -28,20 +28,15 @@ ENDIF(NOT LIBRARY_OUTPUT_PATH)
 
 ## Configure build system
 
-#set(define value)
-
 # Add the include folder to the include path
-#include_directories(${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/includ2)
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
 # Add default source files
-#set(AX3500_SRCS src/AX3500.cpp src/file2.cpp)
 set(AX3500_SRCS src/AX3500.cpp)
 # Add default header files
 set(AX3500_HEADERS include/AX3500.h)
 
 ## Find and add Boost
-
 find_package(Boost COMPONENTS system thread REQUIRED)
 
 link_directories(${Boost_LIBRARY_DIRS})
@@ -52,25 +47,25 @@ set(AX3500_LINK_LIBS ${Boost_SYSTEM_LIBRARY}
 
 ## Build the library
 
-# Compilse the libax3500 library
+# Compile the libax3500 library
 add_library(ax3500 ${AX3500_SRCS})
 target_link_libraries(ax3500 ${AX3500_LINK_LIBS})
 
 ## Build Tests
 
 # If specified
-IF(AX3500_BUILD_TESTS)
-	# Find Google Test
-	enable_testing()
-	find_package(GTest REQUIRED)
-	include_directories(${GTEST_INCLUDE_DIRS})
-
-	# Compile the Test program
-	add_executable(ax3500_tests test/AX3500_test.cpp)
-	# Link the Test program to the ax3500 library
-	target_link_libraries(ax3500_tests ax3500 ${GTEST_BOTH_LIBRARIES})
-	add_test(AllTestsIntest_ax3500 ax3500_tests)
-ENDIF(AX3500_BUILD_TESTS)
+#IF(AX3500_BUILD_TESTS)
+#	# Find Google Test
+#	enable_testing()
+#	find_package(GTest REQUIRED)
+#	include_directories(${GTEST_INCLUDE_DIRS})
+#
+#	# Compile the Test program
+#	add_executable(ax3500_tests test/AX3500_test.cpp)
+#	# Link the Test program to the ax3500 library
+#	target_link_libraries(ax3500_tests ax3500 ${GTEST_BOTH_LIBRARIES})
+#	add_test(AllTestsIntest_ax3500 ax3500_tests)
+#ENDIF(AX3500_BUILD_TESTS)
 
 # Configure make install
 IF(NOT CMAKE_INSTALL_PREFIX)
@@ -102,4 +97,3 @@ IF(NOT AX3500_DONT_SETUP_INSTALL)
 		TARGET  uninstall
 	)
 ENDIF(NOT AX3500_DONT_SETUP_INSTALL)
-
