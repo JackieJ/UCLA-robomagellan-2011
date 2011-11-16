@@ -50,8 +50,6 @@ include_directories(${Boost_INCLUDE_DIRS})
 set(AX3500_LINK_LIBS ${Boost_SYSTEM_LIBRARY}
                      ${Boost_THREAD_LIBRARY})
 
-configure_file(${PROJECT_SOURCE_DIR}/include/AX3500.h)
-
 ## Build the library
 
 # Compilse the libax3500 library

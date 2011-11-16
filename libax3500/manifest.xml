@@ -10,6 +10,7 @@
   <url>http://ros.org/wiki/libax3500</url>
 
   <export>
-    <cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib -Wl,-rpath,${prefix}/lib -llibax3500.a"/>
+    <!-- "-lboost_system" and other libraries are specified here to let *other* packages know to link in these libraries -->
+    <cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib -Wl,-rpath,${prefix}/lib -llibax3500.a -lboost_system -lboost_thread"/>
   </export>
 </package>
