@@ -1,3 +1,8 @@
+# Specific ignore items
+glados/src/glados
+
+
+# Generic ignorables
 .*
 .DS_Store
 *.coverage
