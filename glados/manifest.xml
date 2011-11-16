@@ -1,0 +1,17 @@
+<package>
+  <description brief="glados">
+
+     glados
+
+  </description>
+  <author>Garrett Brown</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/glados</url>
+  <depend package="std_msgs"/>
+  <depend package="roscpp"/>
+  <depend package="libax3500"/>
+
+</package>
+
+
