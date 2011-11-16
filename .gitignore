@@ -1,6 +1,7 @@
 # Project-specific ignore items
 glados/src/glados
-glados/cmake_install.cmake   # contains absolute file references
+# cmake_install.cmake contains absolute file references
+glados/cmake_install.cmake
 
 
 # Generic ignorables
