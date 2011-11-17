@@ -1,6 +1,6 @@
 ## Project Setup
 cmake_minimum_required(VERSION 2.4.6)
-
+set(CMAKE_VERBOSE_MAKEFILE true)
 project(AX3500)
 
 ## Configurations
