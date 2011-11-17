@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?eclipse-pydev version="1.0"?>
+
+<pydev_project>
+<pydev_property name="org.python.pydev.PYTHON_PROJECT_INTERPRETER">Default</pydev_property>
+<pydev_property name="org.python.pydev.PYTHON_PROJECT_VERSION">python 2.6</pydev_property>
+<pydev_pathproperty name="org.python.pydev.PROJECT_EXTERNAL_SOURCE_PATH">
+<path>/home/garrett/Documents/ros/UCLA-robomagellan/glados/src</path>
+<path>/home/garrett/ros/ros_comm/messages/std_msgs/src</path>
+<path>/home/garrett/ros/ros/core/roslib/src</path>
+<path>/home/garrett/ros/ros/core/roslib/lib</path>
+<path>/home/garrett/ros/ros/tools/rospack/lib</path>
+<path>/home/garrett/ros/ros_comm/clients/cpp/roscpp/src</path>
+<path>/home/garrett/ros/ros_comm/clients/cpp/roscpp/lib</path>
+<path>/home/garrett/ros/ros_comm/utilities/cpp_common/src</path>
+<path>/home/garrett/ros/ros_comm/utilities/cpp_common/lib</path>
+<path>/home/garrett/ros/ros_comm/clients/cpp/roscpp_serialization/src</path>
+<path>/home/garrett/ros/ros_comm/clients/cpp/roscpp_serialization/lib</path>
+<path>/home/garrett/ros/ros_comm/utilities/rostime/src</path>
+<path>/home/garrett/ros/ros_comm/utilities/rostime/lib</path>
+<path>/home/garrett/ros/ros_comm/utilities/xmlrpcpp/src</path>
+<path>/home/garrett/ros/ros_comm/utilities/xmlrpcpp/lib</path>
+<path>/home/garrett/ros/ros_comm/tools/rosconsole/src</path>
+<path>/home/garrett/ros/ros_comm/tools/rosconsole/lib</path>
+<path>/home/garrett/ros/ros_comm/messages/rosgraph_msgs/src</path>
+<path>/home/garrett/Documents/ros/UCLA-robomagellan/libax3500/src</path>
+<path>/home/garrett/Documents/ros/UCLA-robomagellan/libax3500/lib</path>
+<path>/home/garrett/ros/ros/core/mk</path>
+<path>/usr/local/lib/python2.7/dist-packages/rosinstall-0.5.22-py2.7.egg</path>
+<path>/usr/local/lib/python2.7/dist-packages/vcstools-0.1.0-py2.7.egg</path>
+<path>/home/garrett/ros/ros/core/roslib/src</path>
+<path>/home/garrett/Documents/ros/UCLA-robomagellan/glados</path>
+<path>/usr/lib/python2.7</path>
+<path>/usr/lib/python2.7/plat-linux2</path>
+<path>/usr/lib/python2.7/lib-tk</path>
+<path>/usr/lib/python2.7/lib-dynload</path>
+<path>/usr/local/lib/python2.7/dist-packages</path>
+<path>/usr/lib/python2.7/dist-packages</path>
+<path>/usr/lib/python2.7/dist-packages/PIL</path>
+<path>/usr/lib/python2.7/dist-packages/gst-0.10</path>
+<path>/usr/lib/python2.7/dist-packages/gtk-2.0</path>
+<path>/usr/lib/pymodules/python2.7</path>
+<path>/usr/lib/python2.7/dist-packages/ubuntu-sso-client</path>
+<path>/usr/lib/python2.7/dist-packages/ubuntuone-client</path>
+<path>/usr/lib/python2.7/dist-packages/ubuntuone-control-panel</path>
+<path>/usr/lib/python2.7/dist-packages/ubuntuone-couch</path>
+<path>/usr/lib/python2.7/dist-packages/ubuntuone-installer</path>
+<path>/usr/lib/python2.7/dist-packages/ubuntuone-storage-protocol</path>
+<path>/usr/lib/python2.7/dist-packages/wx-2.8-gtk2-unicode</path>
+</pydev_pathproperty>
+</pydev_project>
