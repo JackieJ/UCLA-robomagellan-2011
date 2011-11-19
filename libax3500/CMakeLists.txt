@@ -5,8 +5,6 @@ project(AX3500)
 
 ## Configurations
 
-#option(AX3500_BUILD_TESTS "Build all of the AX3500 tests." OFF)
-
 # Allow for building shared libs override
 IF(NOT BUILD_SHARED_LIBS)
 	set(BUILD_SHARED_LIBS OFF)
@@ -17,10 +15,6 @@ IF(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE "RELWITHDEBINFO")
 ENDIF(NOT CMAKE_BUILD_TYPE)
 
-# set the default path for built executables to the "bin" directory
-IF(NOT EXECUTABLE_OUTPUT_PATH)
-	set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-ENDIF(NOT EXECUTABLE_OUTPUT_PATH)
 # set the default path for built libraries to the "lib" directory
 IF(NOT LIBRARY_OUTPUT_PATH)
 	set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
@@ -38,34 +32,16 @@ set(AX3500_HEADERS include/AX3500.h)
 
 ## Find and add Boost
 find_package(Boost COMPONENTS system thread REQUIRED)
-
 link_directories(${Boost_LIBRARY_DIRS})
 include_directories(${Boost_INCLUDE_DIRS})
-
 set(AX3500_LINK_LIBS ${Boost_SYSTEM_LIBRARY}
                      ${Boost_THREAD_LIBRARY})
 
 ## Build the library
 
-# Compile the libax3500 library
+# Compile the AX3500 library
 add_library(ax3500 ${AX3500_SRCS})
 target_link_libraries(ax3500 ${AX3500_LINK_LIBS})
-
-## Build Tests
-
-# If specified
-#IF(AX3500_BUILD_TESTS)
-#	# Find Google Test
-#	enable_testing()
-#	find_package(GTest REQUIRED)
-#	include_directories(${GTEST_INCLUDE_DIRS})
-#
-#	# Compile the Test program
-#	add_executable(ax3500_tests test/AX3500_test.cpp)
-#	# Link the Test program to the ax3500 library
-#	target_link_libraries(ax3500_tests ax3500 ${GTEST_BOTH_LIBRARIES})
-#	add_test(AllTestsIntest_ax3500 ax3500_tests)
-#ENDIF(AX3500_BUILD_TESTS)
 
 # Configure make install
 IF(NOT CMAKE_INSTALL_PREFIX)
@@ -78,7 +54,6 @@ ENDIF(NOT CMAKE_INSTALL_PREFIX)
 IF(NOT AX3500_DONT_SETUP_INSTALL)
 	INSTALL(
 		TARGETS ax3500
-		RUNTIME DESTINATION bin
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib
 	)
