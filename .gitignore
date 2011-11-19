@@ -1,10 +1,13 @@
-# Project-specific ignore items
+## Project-specific ignore items ##
 glados/src/glados
-# cmake_install.cmake contains absolute file references
+# cmake_install.cmake contains absolute file references, ignore this
 glados/cmake_install.cmake
+# Eclipse artifacts
+Debug
+Release
+.settings
 
-
-# Generic ignorables
+## Generic ignorables ##
 .DS_Store
 *.coverage
 *.egg-info
@@ -12,7 +15,7 @@ glados/cmake_install.cmake
 
 # ignore vim swp files and gedit temp files
 *.swp
-*.*~
+*~
 
 # ignore python compiled files
 *.pyc
@@ -20,7 +23,6 @@ glados/cmake_install.cmake
 
 *.zip
 *.cc
-*/files/*
 */tmp/*
 *.hwm*
 *.cfg
