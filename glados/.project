@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>glados-RelWithDebInfo@glados</name>
+	<name>glados</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -10,35 +10,15 @@
 			<triggers>clean,full,incremental,</triggers>
 			<arguments>
 				<dictionary>
-					<key>org.eclipse.cdt.make.core.cleanBuildTarget</key>
-					<value>clean</value>
-				</dictionary>
-				<dictionary>
-					<key>org.eclipse.cdt.make.core.enableCleanBuild</key>
-					<value>true</value>
+					<key>org.eclipse.cdt.core.errorOutputParser</key>
+					<value>org.eclipse.cdt.core.MakeErrorParser;org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GASErrorParser;org.eclipse.cdt.core.GLDErrorParser;</value>
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.append_environment</key>
 					<value>true</value>
 				</dictionary>
 				<dictionary>
-					<key>org.eclipse.cdt.make.core.stopOnError</key>
-					<value>true</value>
-				</dictionary>
-				<dictionary>
-					<key>org.eclipse.cdt.make.core.enabledIncrementalBuild</key>
-					<value>true</value>
-				</dictionary>
-				<dictionary>
-					<key>org.eclipse.cdt.make.core.build.command</key>
-					<value>/usr/bin/make</value>
-				</dictionary>
-				<dictionary>
-					<key>org.eclipse.cdt.make.core.contents</key>
-					<value>org.eclipse.cdt.make.core.activeConfigSettings</value>
-				</dictionary>
-				<dictionary>
-					<key>org.eclipse.cdt.make.core.build.target.inc</key>
+					<key>org.eclipse.cdt.make.core.autoBuildTarget</key>
 					<value>all</value>
 				</dictionary>
 				<dictionary>
@@ -46,35 +26,23 @@
 					<value></value>
 				</dictionary>
 				<dictionary>
-					<key>org.eclipse.cdt.make.core.buildLocation</key>
+					<key>org.eclipse.cdt.make.core.build.command</key>
+					<value>/usr/bin/make</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.build.location</key>
 					<value>/home/garrett/Documents/ros/UCLA-robomagellan/glados</value>
-				</dictionary>
-				<dictionary>
-					<key>org.eclipse.cdt.make.core.useDefaultBuildCmd</key>
-					<value>false</value>
-				</dictionary>
-				<dictionary>
-					<key>org.eclipse.cdt.make.core.environment</key>
-					<value>VERBOSE=1|ROS_ROOT=/home/garrett/ros/ros|ROS_PACKAGE_PATH=/home/garrett/Documents/ros:/home/garrett/ros/robot_model_tutorials:/home/garrett/ros/visualization_tutorials:/home/garrett/ros/geometry_tutorials:/home/garrett/ros/common_tutorials:/home/garrett/ros/ros_tutorials:/home/garrett/ros/documentation:/home/garrett/ros/geometry_experimental:/home/garrett/ros/robot_model_visualization:/home/garrett/ros/geometry_visualization:/home/garrett/ros/diagnostics_monitors:/home/garrett/ros/executive_smach_visualization:/home/garrett/ros/visualization:/home/garrett/ros/slam_gmapping:/home/garrett/ros/navigation:/home/garrett/ros/vision_opencv:/home/garrett/ros/laser_pipeline:/home/garrett/ros/image_pipeline:/home/garrett/ros/image_transport_plugins:/home/garrett/ros/perception_pcl:/home/garrett/ros/image_common:/home/garrett/ros/rx:/home/garrett/ros/visualization_common:/home/garrett/ros/physics_ode:/home/garrett/ros/stage:/home/garrett/ros/simulator_gazebo:/home/garrett/ros/simulator_stage:/home/garrett/ros/xacro:/home/garrett/ros/executive_smach:/home/garrett/ros/robot_model:/home/garrett/ros/assimp:/home/garrett/ros/pluginlib:/home/garrett/ros/orocos_kinematics_dynamics:/home/garrett/ros/nodelet_core:/home/garrett/ros/geometry:/home/garrett/ros/bullet:/home/garrett/ros/filters:/home/garrett/ros/eigen:/home/garrett/ros/driver_common:/home/garrett/ros/diagnostics:/home/garrett/ros/common:/home/garrett/ros/common_msgs:/home/garrett/ros/bond_core:/home/garrett/ros/common_rosdeps:/home/garrett/ros/ros_comm|PYTHONPATH=/home/garrett/ros/ros/core/roslib/src:|PATH=/home/garrett/ros/ros/bin:/usr/lib/lightdm/lightdm:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games|</value>
-				</dictionary>
-				<dictionary>
-					<key>org.eclipse.cdt.make.core.enableFullBuild</key>
-					<value>true</value>
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.build.target.auto</key>
 					<value>all</value>
 				</dictionary>
 				<dictionary>
-					<key>org.eclipse.cdt.make.core.enableAutoBuild</key>
-					<value>false</value>
-				</dictionary>
-				<dictionary>
 					<key>org.eclipse.cdt.make.core.build.target.clean</key>
 					<value>clean</value>
 				</dictionary>
 				<dictionary>
-					<key>org.eclipse.cdt.make.core.fullBuildTarget</key>
+					<key>org.eclipse.cdt.make.core.build.target.inc</key>
 					<value>all</value>
 				</dictionary>
 				<dictionary>
@@ -82,16 +50,48 @@
 					<value></value>
 				</dictionary>
 				<dictionary>
-					<key>org.eclipse.cdt.make.core.build.location</key>
+					<key>org.eclipse.cdt.make.core.buildLocation</key>
 					<value>/home/garrett/Documents/ros/UCLA-robomagellan/glados</value>
 				</dictionary>
 				<dictionary>
-					<key>org.eclipse.cdt.make.core.autoBuildTarget</key>
+					<key>org.eclipse.cdt.make.core.cleanBuildTarget</key>
+					<value>clean</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.contents</key>
+					<value>org.eclipse.cdt.make.core.activeConfigSettings</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.enableAutoBuild</key>
+					<value>false</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.enableCleanBuild</key>
+					<value>true</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.enableFullBuild</key>
+					<value>true</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.enabledIncrementalBuild</key>
+					<value>true</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.environment</key>
+					<value>VERBOSE=1|ROS_ROOT=/home/garrett/ros/ros|ROS_PACKAGE_PATH=/home/garrett/Documents/ros:/home/garrett/ros/robot_model_tutorials:/home/garrett/ros/visualization_tutorials:/home/garrett/ros/geometry_tutorials:/home/garrett/ros/common_tutorials:/home/garrett/ros/ros_tutorials:/home/garrett/ros/documentation:/home/garrett/ros/geometry_experimental:/home/garrett/ros/robot_model_visualization:/home/garrett/ros/geometry_visualization:/home/garrett/ros/diagnostics_monitors:/home/garrett/ros/executive_smach_visualization:/home/garrett/ros/visualization:/home/garrett/ros/slam_gmapping:/home/garrett/ros/navigation:/home/garrett/ros/vision_opencv:/home/garrett/ros/laser_pipeline:/home/garrett/ros/image_pipeline:/home/garrett/ros/image_transport_plugins:/home/garrett/ros/perception_pcl:/home/garrett/ros/image_common:/home/garrett/ros/rx:/home/garrett/ros/visualization_common:/home/garrett/ros/physics_ode:/home/garrett/ros/stage:/home/garrett/ros/simulator_gazebo:/home/garrett/ros/simulator_stage:/home/garrett/ros/xacro:/home/garrett/ros/executive_smach:/home/garrett/ros/robot_model:/home/garrett/ros/assimp:/home/garrett/ros/pluginlib:/home/garrett/ros/orocos_kinematics_dynamics:/home/garrett/ros/nodelet_core:/home/garrett/ros/geometry:/home/garrett/ros/bullet:/home/garrett/ros/filters:/home/garrett/ros/eigen:/home/garrett/ros/driver_common:/home/garrett/ros/diagnostics:/home/garrett/ros/common:/home/garrett/ros/common_msgs:/home/garrett/ros/bond_core:/home/garrett/ros/common_rosdeps:/home/garrett/ros/ros_comm|PYTHONPATH=/home/garrett/ros/ros/core/roslib/src:|PATH=/home/garrett/ros/ros/bin:/usr/lib/lightdm/lightdm:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games|</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.fullBuildTarget</key>
 					<value>all</value>
 				</dictionary>
 				<dictionary>
-					<key>org.eclipse.cdt.core.errorOutputParser</key>
-					<value>org.eclipse.cdt.core.MakeErrorParser;org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GASErrorParser;org.eclipse.cdt.core.GLDErrorParser;</value>
+					<key>org.eclipse.cdt.make.core.stopOnError</key>
+					<value>true</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.useDefaultBuildCmd</key>
+					<value>false</value>
 				</dictionary>
 			</arguments>
 		</buildCommand>
