@@ -20,7 +20,11 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/shared_array.hpp>
 
+/* Turn on debug coding. Serial port traffic will not be mirrored by std::cout */
+#define DEBUG 1
 
+
+/* Reference of possible MCU memory addresses */
 #define AX3500_FLASH_INPUT_CONTROL_MODE    0x00
 #define AX3500_FLASH_MOTOR_CONTROL_MODE    0x01
 #define AX3500_FLASH_AMPS_LIMIT            0x02
@@ -29,7 +33,7 @@
 // reserved                                0x05
 #define AX3500_FLASH_JOYSTICK_DEADBAND     0x06
 #define AX3500_FLASH_ANALOG_DEADBAND       0x06
-// reserved                                0x07
+// reserved? Might be 0x09, need to check  0x07 // problem, see conflicting pages 148 and 152 of the manual
 #define AX3500_FLASH_EXPONENTIATION_CH1    0x08
 #define AX3500_FLASH_EXPONENTIATION_CH2    0x09
 #define AX3500_FLASH_LEFT_RIGHT_ADJUST     0x0A
@@ -70,25 +74,21 @@
 #define AX3500_RAM_CURRENT_AMPS_LIMIT2     0x8C
 
 
-
 class AX3500
 {
 public:
+	/* Motors can be independent or associated. Check AX3500_FLASH_MOTOR_CONTROL_MODE */
 	enum Channel
 	{
-		CHANNEL_1,
-		LINEAR = CHANNEL_1,
-		CHANNEL_2,
-		STEERING = CHANNEL_2
+		CHANNEL_1, CHANNEL_LINEAR   = CHANNEL_1,
+		CHANNEL_2, CHANNEL_STEERING = CHANNEL_2
 	};
-
 	enum Encoder
 	{
 		ENCODER_1    = 0x1,
 		ENCODER_2    = 0x2,
 		ENCODER_BOTH = ENCODER_1 | ENCODER_2 // 0x3
 	};
-
 	enum EncoderCounterMode
 	{
 		ABSOLUTE,
@@ -103,11 +103,17 @@ public:
 	 * might not be in the correct mode to accept commands over the serial port,
 	 * so this function is responsible for enabling the correct modes. For a
 	 * breakdown of what this entails, read through the comments in the function.
+	 *
+	 * Examples:
+	 * Linux: Open("/dev/ttyUSB0");
+	 * Win32: Open("COM3");
 	 */
-	bool Open(const std::string &devname);
+
+	bool Open(std::string devname);
 	/*
 	 * Disconnect from the AX3500 and close the serial port.
 	 */
+
 	void Close();
 	/*
 	 * Returns true if a connection to a serial device exists. If the
@@ -158,9 +164,9 @@ public:
 	void ResetEncoder(Encoder encoder);
 
 	/*
-	 * Send a null character to the motor controller to keep it awake. This is only
-	 * required in watchdog mode, and only if no other commands have been sent
-	 * within the last second.
+	 * Send a null character to the motor controller to keep it awake. This is
+	 * only required in watchdog mode, and only if no other command has been
+	 * sent within within the last second.
 	 *
 	 * Command: \0 (null character)
 	 */
@@ -292,14 +298,16 @@ public:
 	void ReadMemory(char address, char &value);
 
 	/*
-	 * Counterpart to ReadMemory().
+	 * Counterpart to ReadMemory(). Because flash can only be written a finite
+	 * number of times, WriteMemory() performs a read first to evaluate whether
+	 * a write is necessary. Most parameters will require a Reset() after being
+	 * written. Due to this, WriteMemory() is always synchronous (unlike other
+	 * commands) so that the subsequent Reset() will occur *after* the memory
+	 * is written.
 	 *
 	 * Command: ^nn mm
 	 */
 	void WriteMemory(char address, char value);
-
-	//void DumpFlashMemoryDebug(std::string &formatted_output);
-	//void DumpRuntimeParamsDebug(std::string &formatted_output);
 
 	/*
 	 * Read the value of the Encoder counter(s). The number is a signed 32 bit
@@ -366,7 +374,10 @@ public:
 	void ReadEncoderMemory(char address, char &value);
 
 	/*
-	 * Counterpart to ReadEncoderMemory().
+	 * Counterpart to ReadEncoderMemory(). Because flash can only be written a
+	 * finite number of times, WriteMemory() performs a read to evaluate
+	 * whether a write is necessary. Unlike other commands, memory writes are
+	 * not asynchronous.
 	 *
 	 * Command: *nn mm
 	 */
@@ -504,11 +515,16 @@ private:
 	// Debugging commands
 	inline void debug_out(std::string out_str)
 	{
+#if defined(DEBUG)
 		std::cout << "< " << out_str;
+#endif
 	}
 	inline void debug_in(std::string in_str)
 	{
+#if defined(DEBUG)
 		std::cout << "> " << in_str << '\n';
+#endif
+
 	}
 };
 

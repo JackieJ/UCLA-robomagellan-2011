@@ -12,24 +12,14 @@
 
 #define DELIMITER_CHAR '\r'
 #define DELIMITER "\r"
-/*
-#define DELIMITER_CHAR '\n' // test
-#define DELIMITER "\n" // test
-*/
+
 #define COMMAND_RESET             "%rrrrrr" DELIMITER
 #define COMMAND_ENTER_SERIAL_MODE DELIMITER DELIMITER DELIMITER DELIMITER DELIMITER \
                                   DELIMITER DELIMITER DELIMITER DELIMITER DELIMITER // x 10
 
-#ifndef _WIN32
-	const char *PORT = "dev/ttyUSB0";
-#else
-	const char *PORT = "COM3";
-#endif
-
 using std::cout;
 
-
-AX3500::AX3500() : m_io(), m_port(m_io), io_thread(), m_bRunning(false)
+AX3500::AX3500() : m_io(), m_port(m_io), io_thread(), watchdog_thread(), m_bRunning(false)
 {
 }
 
@@ -38,7 +28,7 @@ AX3500::~AX3500()
 	Close();
 }
 
-bool AX3500::Open(const std::string &device)
+bool AX3500::Open(std::string device)
 {
 	Close();
 
@@ -82,48 +72,56 @@ bool AX3500::Open(const std::string &device)
 	std::istream is(&input);      // stream to convert streambuf to std::string
 	std::string line;             // final resting place of our input line
 
-	// "During a short time at power up, the Encoder’s MCU will send data to
-	// the main serial port"
-	//  * Power up prompt from main MCU
-	//  * Hardware code of main board
-	//  * Power up prompt from encoder MCU
-	//  * Hardware code of encoder module
-	//
-	// Or maybe this should be 3 lines instead of 4
-	//  * Announces the presence of the encoder MCU
-	//  * Outputs its software revision and date
-	//  * Outputs a code identifying the module’s hardware ID
-	//
-	std::string startup_prompt; // startup prompt (multiple lines)
-
-	for (int i = 0; i < 4; i++) // TODO: is this 3 or 4 lines?
-	{
-		// This *might* block until an AX3500 is powered up on the serial port
-		read_until(m_port, input, DELIMITER_CHAR);
-		std::getline(is, line); // Convert streambuf to std::string
-		debug_in(line);
-		startup_prompt += line + '\n';
-	}
-
-	// If the controller is configured in R/C or Analog mode, it will not be
-	// able to accept and recognize RS232 commands immediately. However, the
-	// controller will be “listening” to the serial port and will enter the
-	// serial mode after it has received 10 continuous “Enter” (Carriage
-	// Return) characters. At that point, the controller will output an “OK”
-	// message, indicating that it has entered the RS232 mode and that it is
-	// now ready to accept commands.
+	// Capture echoed reset command
 	read_until(m_port, input, DELIMITER_CHAR);
-	std::getline(is, line);
+	std::getline(is, line, DELIMITER_CHAR);
 	debug_in(line);
+
+	// Sometimes after Reset(), instead of echoing COMMAND_RESET, it will print OK,
+	// so I guess this means we can skip a bunch of stuff
+	if (line.compare("OK") != 0)
+	{
+		// During a short time at power up, the Encoder’s MCU will send data to
+		// the main serial port. (If input control mode is RC/analog, these lines
+		// will be garbled numbers and symbols.)
+		//  * Power up prompt from main MCU
+		//  * Hardware code of main board
+		//  * Power up prompt from encoder MCU
+		//  * Hardware code of encoder module
+		std::string startup_prompt; // startup prompt (multiple lines)
+
+		for (int i = 0; i < 4; i++)
+		{
+			// This *might* block until an AX3500 is powered up on the serial port
+			read_until(m_port, input, DELIMITER_CHAR);
+			std::getline(is, line, DELIMITER_CHAR); // Convert streambuf to std::string
+			debug_in(line);
+			startup_prompt += line + '\n';
+		}
+
+		// If the controller is configured in R/C or Analog mode, it will not be
+		// able to accept and recognize RS232 commands immediately. However, the
+		// controller will be “listening” to the serial port and will enter the
+		// serial mode after it has received 10 continuous “Enter” (Carriage
+		// Return) characters. At that point, the controller will output an “OK”
+		// message, indicating that it has entered the RS232 mode and that it is
+		// now ready to accept commands.
+		read_until(m_port, input, DELIMITER_CHAR);
+		std::getline(is, line, DELIMITER_CHAR);
+		debug_in(line);
+	}
 
 	if (line.compare("OK") != 0)
 	{
 		write(m_port, boost::asio::buffer(COMMAND_ENTER_SERIAL_MODE, sizeof(COMMAND_ENTER_SERIAL_MODE) - 1));
 		debug_out("\\r\\r\\r\\r\\r\\r\\r\\r\\r\\r\n");
+
 		read_until(m_port, input, DELIMITER_CHAR);
-		std::getline(is, line);
+		std::getline(is, line, DELIMITER_CHAR);
 		debug_in(line);
-		if (line.compare("OK") != 0)
+
+		// Ignore any characters that have accumulated before the "OK"
+		if (line.substr(line.length() - 2, 2).compare("OK") != 0)
 		{
 			// bail out
 			write(m_port, boost::asio::buffer(COMMAND_RESET, sizeof(COMMAND_RESET) - 1));
@@ -133,19 +131,49 @@ bool AX3500::Open(const std::string &device)
 		}
 	}
 
-	// Rev up the IO thread
 	m_deviceName = device;
+
+	// Rev up the IO thread
 	m_bRunning = true;
 	boost::thread t(boost::bind(&AX3500::io_run, this));
 	io_thread.swap(t);
 
-	// Start the watchdog thread
-	boost::thread t2(boost::bind(&AX3500::watchdog_run, this));
-	watchdog_thread.swap(t2);
+	// Avoid race conditions by letting the IO thread fully initialize
+	usleep(100000); // 0.1s
 
-	// Sleep for 100 microseconds to let the IO thread acquire the lock
-	// Otherwise, an immediate call to Close() could cause deadlock (perhaps)
-	usleep(100);
+	// Get the input control mode and watchdog state
+	//   Value  Mode
+	//       0    R/C Radio mode (default)
+	//       1    RS232, no watchdog
+	//       2    RS232, with watchdog
+	//       3    Analog mode
+	char value;
+	bool bWatchdogEnabled;
+	ReadMemory(AX3500_FLASH_INPUT_CONTROL_MODE, value);
+	switch (value)
+	{
+	case 0:
+	case 3:
+		// Start up in RS232 mode next time (default to watchdog enabled)
+		WriteMemory(AX3500_FLASH_INPUT_CONTROL_MODE, 0x02);
+		bWatchdogEnabled = true;
+		break;
+	case 1:
+		bWatchdogEnabled = false;
+		break;
+	case 2:
+	default:
+		bWatchdogEnabled = true;
+		break;
+	}
+
+	// Start the watchdog thread if necessary
+	if (bWatchdogEnabled)
+	{
+		boost::thread t2(boost::bind(&AX3500::watchdog_run, this));
+		watchdog_thread.swap(t2);
+	}
+
 	return true;
 }
 
@@ -173,8 +201,10 @@ void AX3500::Close()
 	if (!m_port.is_open())
 		return; // Already closed, nothing left to do
 
-	write(m_port, boost::asio::buffer(COMMAND_RESET, sizeof(COMMAND_RESET) - 1)); // reset the board
+	// Reset the board
+	write(m_port, boost::asio::buffer(COMMAND_RESET, sizeof(COMMAND_RESET) - 1));
 	debug_out(COMMAND_RESET);
+	usleep(500 * 1000); // wait for the board to reset
 	m_port.close();
 }
 
@@ -228,30 +258,51 @@ void AX3500::io_run()
 			continue;
 		}
 
-		// Send the command to the motor controller
+		// Send the command to the motor controller and read the echoed response
 		write(m_port, boost::asio::buffer(cmd_copy));
 		debug_out(cmd_copy);
 
 		read_until(m_port, input, DELIMITER_CHAR);
-		std::getline(is, line);
+		std::getline(is, line, DELIMITER_CHAR);
 		debug_in(line);
 
-		// Verify that the command is echoed back to us (not much can be done if it isn't...)
-		if (cmd_copy.substr(0, cmd_copy.length() - 1).compare(line) != 0) // strip delimiter
-			cout << "Error: expecting " << cmd_copy.substr(0, cmd_copy.length() - 1) << ", received " << line << '\n';
+		// Sometimes the controller will echo a '\r' and the command will be on
+		// the following line. And check for a spurious OK just 'cause.
+		if (!line.length() || line.compare("OK") == 0)
+		{
+			read_until(m_port, input, DELIMITER_CHAR);
+			std::getline(is, line, DELIMITER_CHAR);
+			debug_in(line);
+		}
 
-		// Read one line for each requested response. If a command lied about
-		// how many responses it should get, this will block until the watchdog
-		// timer kills the motor and issues a 'W' character. If watchdog is not
-		// enabled, God help us all.
+		// Strip delimiter (not needed for future references to cmd_copy)
+		cmd_copy = cmd_copy.substr(0, cmd_copy.length() - 1);
 
+		// Verify that the command is echoed back to us. Strip accumulated W's from line
+#if defined(DEBUG)
+		while (line[0] == 'W')
+			line = line.substr(1, line.length() - 1);
+		if (cmd_copy.compare(line) != 0)
+			cout << "Error: expecting " << cmd_copy << ", received " << line << '\n';
+#endif
+
+		// Read one line for each requested response. If a command lied about how
+		// many responses it should get, this will block FOREVER. God help us all.
 		char *response = command.get<2>().get();
 		int count = command.get<3>();
 		for (int i = 0; i < count; i++)
 		{
 			read_until(m_port, input, DELIMITER_CHAR);
-			std::getline(is, line);
+			std::getline(is, line, DELIMITER_CHAR);
 			debug_in(line);
+
+			// Check for a spurious OK
+			if (line.compare("OK") == 0)
+			{
+				read_until(m_port, input, DELIMITER_CHAR);
+				std::getline(is, line, DELIMITER_CHAR);
+				debug_in(line);
+			}
 
 			// Some commands, like !A00, reply with a plus or minus. Read this,
 			// but don't do anything if we don't have a container to put it in.
@@ -274,7 +325,12 @@ void AX3500::io_run()
 			if (line[0] == '+')
 				response[i] = '+';
 			else if (line[0] == '-')
-				response[i] = '-';
+			{
+				// Command failed. No more responses come after this line
+				//response[i] = '-';
+				response[i] = 0; // Use this because '-' (0x2D) might be interpreted as a response
+				break;
+			}
 			else // response is two hex characters NN
 				response[i] = fromHex(line.c_str());
 		}
@@ -310,7 +366,7 @@ void AX3500::AddCommand(const io_queue_t &command, std::vector<io_queue_t> &queu
 	{
 		const char* cmd2 = it->get<0>()->c_str();
 		if (isCommand(cmd2) && ((cmd[2] == '^' || cmd[2] == '*')        // If it's a memory write command
-				? fromHex(cmd2 + 1) == fromHex(cmd.c_str() + 1)         // compare addresses
+		        ? fromHex(cmd2 + 1) == fromHex(cmd.c_str() + 1)         // compare addresses
 		            : (std::toupper(cmd[1]) == std::toupper(cmd2[1])))) // otherwise, compare letters
 		{
 			// Erase and move on to the next command
@@ -445,6 +501,7 @@ void AX3500::QueryMotorPower(unsigned char &Motor1_relative, unsigned char &Moto
 	boost::shared_array<char>           response(new char[2]);
 
 	io_queue_t command(cmd, query_condition, response, 2);
+
 	{
 		boost::mutex::scoped_lock lock(io_mutex);
 
@@ -469,6 +526,7 @@ void AX3500::QueryMotorCurrent(float &Motor1_amps, float &Motor2_amps)
 	boost::shared_array<char>           response(new char[2]);
 
 	io_queue_t command(cmd, query_condition, response, 2);
+
 	{
 		boost::mutex::scoped_lock lock(io_mutex);
 
@@ -493,6 +551,7 @@ void AX3500::QueryAnalogInputs12(float &Input1_volts, float &Input2_volts)
 	boost::shared_array<char>           response(new char[2]);
 
 	io_queue_t command(cmd, query_condition, response, 2);
+
 	{
 		boost::mutex::scoped_lock lock(io_mutex);
 
@@ -506,8 +565,8 @@ void AX3500::QueryAnalogInputs12(float &Input1_volts, float &Input2_volts)
 	query_condition->wait(mutex);
 
 	// Convert to volts (page 145)
-	Input1_volts = ((float)response[0] + 0x80) * 5.0f / 0xFF;
-	Input2_volts = ((float)response[1] + 0x80) * 5.0f / 0xFF;
+	Input1_volts = ((float)response[0] + 0x80) * 5.0f / 255;
+	Input2_volts = ((float)response[1] + 0x80) * 5.0f / 255;
 }
 
 void AX3500::QueryAnalogInputs34(float &Input3_volts, float &Input4_volts)
@@ -517,6 +576,7 @@ void AX3500::QueryAnalogInputs34(float &Input3_volts, float &Input4_volts)
 	boost::shared_array<char>           response(new char[2]);
 
 	io_queue_t command(cmd, query_condition, response, 2);
+
 	{
 		boost::mutex::scoped_lock lock(io_mutex);
 
@@ -530,8 +590,8 @@ void AX3500::QueryAnalogInputs34(float &Input3_volts, float &Input4_volts)
 	query_condition->wait(mutex);
 
 	// Convert to volts
-	Input3_volts = ((float)response[0] + 0x80) * 5.0f / 0xFF;
-	Input4_volts = ((float)response[1] + 0x80) * 5.0f / 0xFF;
+	Input3_volts = ((float)response[0] + 0x80) * 5.0f / 255;
+	Input4_volts = ((float)response[1] + 0x80) * 5.0f / 255;
 }
 
 void AX3500::QueryTemperature(int &Thermistor1_celsius, int &Thermistor2_celsius)
@@ -541,6 +601,7 @@ void AX3500::QueryTemperature(int &Thermistor1_celsius, int &Thermistor2_celsius
 	boost::shared_array<char>           response(new char[2]);
 
 	io_queue_t command(cmd, query_condition, response, 2);
+
 	{
 		boost::mutex::scoped_lock lock(io_mutex);
 
@@ -606,6 +667,7 @@ void AX3500::QueryBatteryVoltages(float &MainBattery_volts, float &PowerControl_
 	boost::shared_array<char>           response(new char[2]);
 
 	io_queue_t command(cmd, query_condition, response, 2);
+
 	{
 		boost::mutex::scoped_lock lock(io_mutex);
 
@@ -630,6 +692,7 @@ void AX3500::QueryDigitalInputs(bool &InputE, bool &InputF, bool &EmergencySwitc
 	boost::shared_array<char>           response(new char[3]);
 
 	io_queue_t command(cmd, query_condition, response, 3);
+
 	{
 		boost::mutex::scoped_lock lock(io_mutex);
 
@@ -657,9 +720,10 @@ void AX3500::ReadMemory(char address, char &value)
 	query[3] = DELIMITER_CHAR;
 	boost::shared_ptr<std::string>      cmd(new std::string(query, sizeof(query)));
 	boost::shared_ptr<boost::condition> query_condition(new boost::condition);
-	boost::shared_array<char>           response(new char[1]);
+	boost::shared_array<char>           response(new char[2]); // first char is value, second is +
 
-	io_queue_t command(cmd, query_condition, response, 1);
+	io_queue_t command(cmd, query_condition, response, 2);
+
 	{
 		boost::mutex::scoped_lock lock(io_mutex);
 
@@ -672,12 +736,18 @@ void AX3500::ReadMemory(char address, char &value)
 	boost::mutex mutex;
 	query_condition->wait(mutex);
 
-	// Get the response
+	// Get the value, ignore the confirmation (+/-)
 	value = response[0];
 }
 
 void AX3500::WriteMemory(char address, char value)
 {
+	// Flash can only be written to a finite number of times
+	char oldValue = 0xFF; // just in case
+	ReadMemory(address, oldValue);
+	if (oldValue == value)
+		return;
+
 	// Build the query
 	char cmd[7];
 	cmd[0] = '^';
@@ -691,10 +761,14 @@ void AX3500::WriteMemory(char address, char value)
 
 	io_queue_t command(cmd_ptr, query_condition, response, 1); // expect a + confirmation
 
-	boost::mutex::scoped_lock lock(io_mutex);
+	{
+		boost::mutex::scoped_lock lock(io_mutex);
+		AddCommand(command, io_queue);
+		io_condition.notify_one();
+	}
 
-	AddCommand(command, io_queue);
-	io_condition.notify_one();
+	boost::mutex mutex;
+	query_condition->wait(mutex);
 }
 
 void AX3500::ReadEncoder(Encoder encoder, EncoderCounterMode mode, int &Encoder_ticks)
@@ -742,6 +816,7 @@ void AX3500::ReadEncoder(Encoder encoder, EncoderCounterMode mode, int &Encoder_
 	boost::shared_array<char>           response(new char[4]);
 
 	io_queue_t command(cmd_ptr, query_condition, response, 4); // expect a single 32-bit integer as 4 bytes
+
 	{
 		boost::mutex::scoped_lock lock(io_mutex);
 
@@ -768,6 +843,7 @@ void AX3500::ReadSpeed(char &Encoder1_relative, char &Encoder2_relative)
 	boost::shared_array<char>           response(new char[2]);
 
 	io_queue_t command(cmd, query_condition, response, 2);
+
 	{
 		boost::mutex::scoped_lock lock(io_mutex);
 
@@ -792,6 +868,7 @@ void AX3500::ReadFilteredSpeed(char &Encoder1_relative, char &Encoder2_relative)
 	boost::shared_array<char>           response(new char[2]);
 
 	io_queue_t command(cmd, query_condition, response, 2);
+
 	{
 		boost::mutex::scoped_lock lock(io_mutex);
 
@@ -816,6 +893,7 @@ void AX3500::ReadQuadrature(bool &Switch1, bool &Switch2, bool &Switch3, bool &S
 	boost::shared_array<char>           response(new char[1]);
 
 	io_queue_t command(cmd, query_condition, response, 1);
+
 	{
 		boost::mutex::scoped_lock lock(io_mutex);
 
@@ -844,9 +922,10 @@ void AX3500::ReadEncoderMemory(char address, char &value)
 	query[3] = DELIMITER_CHAR;
 	boost::shared_ptr<std::string>      cmd(new std::string(query, sizeof(query)));
 	boost::shared_ptr<boost::condition> query_condition(new boost::condition);
-	boost::shared_array<char>           response(new char[1]);
+	boost::shared_array<char>           response(new char[2]); // first char for value, second for +
 
-	io_queue_t command(cmd, query_condition, response, 1);
+	io_queue_t command(cmd, query_condition, response, 2);
+
 	{
 		boost::mutex::scoped_lock lock(io_mutex);
 
@@ -859,13 +938,20 @@ void AX3500::ReadEncoderMemory(char address, char &value)
 	boost::mutex mutex;
 	query_condition->wait(mutex);
 
-	// Get the response
+	// Get the value, ignore the confirmation (+/-)
 	value = response[0];
 }
 
 void AX3500::WriteEncoderMemory(char address, char value)
 {
-	// Build the query
+	// Flash can only be written to a finite number of times. Only write if
+	// necessary. A side effect is this command is now semi-synchronous.
+	char oldValue = 0xFF; // just in case
+	ReadEncoderMemory(address, oldValue);
+	if (oldValue == value)
+		return;
+
+	// Build the query (*NN MM)
 	char cmd[7];
 	cmd[0] = '*';
 	toHex(address, cmd + 1);
@@ -878,10 +964,14 @@ void AX3500::WriteEncoderMemory(char address, char value)
 
 	io_queue_t command(cmd_ptr, query_condition, response, 1); // expect a + confirmation
 
-	boost::mutex::scoped_lock lock(io_mutex);
+	{
+		boost::mutex::scoped_lock lock(io_mutex);
+		AddCommand(command, io_queue);
+		io_condition.notify_one();
+	}
 
-	AddCommand(command, io_queue);
-	io_condition.notify_one();
+	boost::mutex mutex;
+	query_condition->wait(mutex);
 }
 
 unsigned int AX3500::fromHex32(const char *src) const
@@ -897,4 +987,3 @@ unsigned int AX3500::fromHex32(const char *src) const
 	       (fromHex(num.c_str()+4) << (8*1)) +
 	       (fromHex(num.c_str()+6) << (8*0));
 }
-
