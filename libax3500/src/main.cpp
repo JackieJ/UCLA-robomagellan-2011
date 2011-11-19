@@ -118,7 +118,7 @@ void dumpMemory(AX3500 &ax3500)
 	cout << "Memory dump took " << elapsed(then, now) << " microseconds\n\n";
 }
 
-int main()
+int main(int argc, char **argv)
 {
 	AX3500 ax3500;
 	timeval now, then;
