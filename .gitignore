@@ -1,7 +1,7 @@
 ## Project-specific ignore items ##
 glados/src/glados
 # cmake_install.cmake contains absolute file references, ignore this
-glados/cmake_install.cmake
+#glados/cmake_install.cmake
 # Eclipse artifacts
 Debug
 Release
