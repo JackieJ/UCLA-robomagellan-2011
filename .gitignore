@@ -1,3 +1,19 @@
+## ROS ignorables ##
+build
+bin
+lib
+*/lib/*
+installed
+patched
+wiped
+msg_gen
+srv_gen
+
+## Eclipse ignorables ##
+Debug
+Release
+.settings
+
 ## Generic ignorables ##
 .DS_Store
 *.coverage
@@ -12,21 +28,10 @@
 *.pyc
 *.pyo
 
+# some more ignores
 *.zip
 *.cc
 */tmp/*
 *.hwm*
 *.cfg
 .svn
-Debug
-Release
-.settings
-build
-bin
-lib
-*/lib/*
-installed
-patched
-wiped
-msg_gen
-srv_gen
