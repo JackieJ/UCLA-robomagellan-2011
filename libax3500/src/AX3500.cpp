@@ -19,7 +19,7 @@
 
 using std::cout;
 
-AX3500::AX3500() : m_io(), m_port(m_io), io_thread(), watchdog_thread(), m_bRunning(false)
+AX3500::AX3500() : m_io(), m_port(m_io), m_bRunning(false)
 {
 }
 
