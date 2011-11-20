@@ -8,10 +8,11 @@ AX3500 ax3500;
 void ReceiveVelocity(const turtlesim::Velocity::ConstPtr& msg)
 {
 	int linear = (int)(msg->linear * 5/2);
-	ax3500.SetSpeed(AX3500::CHANNEL_LINEAR, linear);
-
 	int angular = (int)(msg->angular * 5/2);
-	ax3500.SetSpeed(AX3500::CHANNEL_STEERING, angular);
+
+	// Notice, the channels are reversed because motor 2 is rotated around
+	ax3500.SetSpeed(AX3500::CHANNEL_LINEAR, angular);
+	ax3500.SetSpeed(AX3500::CHANNEL_STEERING, linear);
 }
 
 
