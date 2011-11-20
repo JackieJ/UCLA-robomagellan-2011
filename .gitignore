@@ -1,12 +1,3 @@
-## Project-specific ignore items ##
-glados/src/glados
-# cmake_install.cmake contains absolute file references, ignore this
-#glados/cmake_install.cmake
-# Eclipse artifacts
-Debug
-Release
-.settings
-
 ## Generic ignorables ##
 .DS_Store
 *.coverage
@@ -27,10 +18,12 @@ Release
 *.hwm*
 *.cfg
 .svn
+Debug
+Release
+.settings
 build
 bin
 lib
-cpp
 */lib/*
 installed
 patched
