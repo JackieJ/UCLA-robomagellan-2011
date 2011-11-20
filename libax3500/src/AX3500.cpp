@@ -222,34 +222,38 @@ void AX3500::io_run()
 	std::istream is(&input);      // stream to convert streambuf to std::string
 	std::string line;             // final resting place of our input line
 
-	// Critical section we enter here is different from Open() and Close().
-	// This function is still excluded because Open() calls Close() which
-	// blocks until this function exits. Technically, this program could be
-	// written using a single mutex instead of two; the (minor) downside would
-	// be that IsOpen() would block if the serial port were in use.
-	boost::mutex::scoped_lock io_lock(io_mutex);
-
 	// Event loop
 	while (true)
 	{
-		// On entry, release mutex and suspend this thread
-		// On return, reacquire mutex
+		// Critical section we enter here is different from Open() and Close().
+		// This function is still "excluded" because Open() calls Close() which
+		// blocks until this function exits. I assume this program could be
+		// written using a single mutex, but that's not the way I designed it.
+		boost::mutex::scoped_lock io_lock(io_mutex);
+
+		// On entry, release mutex and suspend this thread. On return, reacquire mutex
 		while (io_queue.empty() && m_bRunning)
-			io_condition.wait(io_mutex); // TODO: do I wait on the lock or the mutex?
+			io_condition.wait(io_mutex); // TODO: do I wait on io_lock or io_mutex?
 
 		// If we were awaken to exit, then clean up shop and die a quiet death
 		if (!m_bRunning)
 		{
 			io_queue.clear();
-			return; // Note, this is the only exit point of the function
+			// Note, this is the only exit point of the function
+			// Automatically releases the scoped lock upon deconstruction
+			return;
 		}
 
 		// Pop the front command
 		io_queue_t command = io_queue.front();
 		io_queue.erase(io_queue.begin());
+
+		// Don't need the lock for the rest of the while loop, let it expire
+		io_lock.unlock();
+
 		std::string cmd_copy(command.get<0>()->c_str());
 
-		// Check for watchdog reset. Handle separately. No need to check response (there isn't one)
+		// Check if watchdog reset. No need to check response (there isn't one)
 		if (cmd_copy.length() == 0)
 		{
 			write(m_port, boost::asio::buffer("", 1));
