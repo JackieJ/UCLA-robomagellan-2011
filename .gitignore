@@ -10,6 +10,10 @@ msg_gen
 srv_gen
 
 ## Eclipse ignorables ##
+.cproject
+.project
+.pydevproject
+cmake_install.cmake
 Debug
 Release
 .settings
