@@ -107,14 +107,23 @@ public:
 	 * Examples:
 	 * Linux: Open("/dev/ttyUSB0");
 	 * Win32: Open("COM3");
+	 *
+	 * The safety cutoff mode available through the second command (default off)
+	 * will cut power to the motors if no activity is performed for 1 second.
+	 * For this to work, hardware support must be enabled (memory location
+	 * AX3500_FLASH_INPUT_CONTROL_MODE must not be 0x01). If the hardware is
+	 * misconfigured, you can fix this by running (once):
+	 *
+	 * WriteMemory(AX3500_FLASH_INPUT_CONTROL_MODE, 0x02);
+	 * Reset();
 	 */
+	bool Open(std::string devname, bool safetyCutoff = false);
 
-	bool Open(std::string devname);
 	/*
 	 * Disconnect from the AX3500 and close the serial port.
 	 */
-
 	void Close();
+
 	/*
 	 * Returns true if a connection to a serial device exists. If the
 	 * connection is in an intermediate stage (e.g. being opened or closed
@@ -165,24 +174,12 @@ public:
 
 	/*
 	 * Send a null character to the motor controller to keep it awake. This is
-	 * only required in watchdog mode, and only if no other command has been
-	 * sent within within the last second.
+	 * only required if safety cutoff mode is enabled, and only if no other
+	 * command has been sent within within the last second.
 	 *
 	 * Command: \0 (null character)
 	 */
 	void TickleWatchdogTimer();
-
-	/*
-	 * Get the state of the hardware watchdog timer. This state is read at
-	 * power-up and stored internally. If enabled, a command must be sent to
-	 * the motor controller every second or it will shut off power to the motors.
-	 *
-	 * To permanently disable watchdog timer, use the following sequence of commands:
-	 *
-	 * WriteMemory(AX3500_FLASH_INPUT_CONTROL_MODE, 0x01); // 0x01 = RS232 mode, no watchdog
-	 * Reset();
-	 */
-	bool IsWatchdogEnabled() const;
 
 	/*
 	 * This query will cause the controller to return the actual amount of power
@@ -427,9 +424,10 @@ private:
 	 */
 	void AddCommand(const io_queue_t &command, std::vector<io_queue_t> &queue) const;
 
-	std::string              m_deviceName;
+	std::string              m_deviceName; // Only used for Reset() and GetDeviceName()
 	boost::asio::io_service  m_io; // The I/O service talks to the serial device
 	boost::asio::serial_port m_port;
+	bool                     m_bSafetyCutoffOption; // Only stored for the Reset() command
 
 	boost::thread io_thread;
 	bool          m_bRunning;
