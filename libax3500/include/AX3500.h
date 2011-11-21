@@ -173,6 +173,18 @@ public:
 	void TickleWatchdogTimer();
 
 	/*
+	 * Get the state of the hardware watchdog timer. This state is read at
+	 * power-up and stored internally. If enabled, a command must be sent to
+	 * the motor controller every second or it will shut off power to the motors.
+	 *
+	 * To permanently disable watchdog timer, use the following sequence of commands:
+	 *
+	 * WriteMemory(AX3500_FLASH_INPUT_CONTROL_MODE, 0x01); // 0x01 = RS232 mode, no watchdog
+	 * Reset();
+	 */
+	bool IsWatchdogEnabled() const;
+
+	/*
 	 * This query will cause the controller to return the actual amount of power
 	 * that is being applied to the motors at that time. The number is a hexadecimal
 	 * number ranging from 0 to +127. In most cases, this value is directly related
@@ -415,13 +427,15 @@ private:
 	 */
 	void AddCommand(const io_queue_t &command, std::vector<io_queue_t> &queue) const;
 
-	std::string m_deviceName;
-	boost::asio::io_service m_io; // The I/O service talks to the serial device
+	std::string              m_deviceName;
+	boost::asio::io_service  m_io; // The I/O service talks to the serial device
 	boost::asio::serial_port m_port;
 
 	boost::thread io_thread;
+	bool          m_bRunning;
+
 	boost::thread watchdog_thread;
-	bool m_bRunning;
+	bool          m_bWatchdogEnabled;
 
 	std::vector<io_queue_t> io_queue;
 

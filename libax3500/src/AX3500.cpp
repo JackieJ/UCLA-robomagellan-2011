@@ -19,7 +19,7 @@
 
 using std::cout;
 
-AX3500::AX3500() : m_io(), m_port(m_io), m_bRunning(false)
+AX3500::AX3500() : m_io(), m_port(m_io), m_bRunning(false), m_bWatchdogEnabled(false)
 {
 }
 
@@ -148,7 +148,6 @@ bool AX3500::Open(std::string device)
 	//       2    RS232, with watchdog
 	//       3    Analog mode
 	char value;
-	bool bWatchdogEnabled;
 	ReadMemory(AX3500_FLASH_INPUT_CONTROL_MODE, value);
 	switch (value)
 	{
@@ -156,19 +155,19 @@ bool AX3500::Open(std::string device)
 	case 3:
 		// Start up in RS232 mode next time (default to watchdog enabled)
 		WriteMemory(AX3500_FLASH_INPUT_CONTROL_MODE, 0x02);
-		bWatchdogEnabled = true;
+		m_bWatchdogEnabled = true;
 		break;
 	case 1:
-		bWatchdogEnabled = false;
+		m_bWatchdogEnabled = false;
 		break;
 	case 2:
 	default:
-		bWatchdogEnabled = true;
+		m_bWatchdogEnabled = true;
 		break;
 	}
 
 	// Start the watchdog thread if necessary
-	if (bWatchdogEnabled)
+	if (m_bWatchdogEnabled)
 	{
 		boost::thread t2(boost::bind(&AX3500::watchdog_run, this));
 		watchdog_thread.swap(t2);
@@ -186,7 +185,7 @@ bool AX3500::Open(std::string device)
 void AX3500::Close()
 {
 	// Kill the IO thread if running
-	m_bRunning = false;
+	m_bRunning = m_bWatchdogEnabled = false;
 	io_condition.notify_one();
 	io_thread.join();
 
@@ -210,8 +209,8 @@ void AX3500::Close()
 
 bool AX3500::IsOpen() const
 {
-	// Enter critical section
 	boost::mutex::scoped_lock lock(open_mutex);
+
 	return m_port.is_open();
 }
 
@@ -354,6 +353,13 @@ void AX3500::watchdog_run()
 		if (m_bRunning)
 			TickleWatchdogTimer();
 	}
+}
+
+bool AX3500::IsWatchdogEnabled() const
+{
+	boost::mutex::scoped_lock lock(open_mutex);
+
+	return m_bWatchdogEnabled;
 }
 
 void AX3500::AddCommand(const io_queue_t &command, std::vector<io_queue_t> &queue) const
