@@ -16,18 +16,19 @@ AX3500 ax3500;
 
 void ReceiveVelocity(const turtlesim::Velocity::ConstPtr& msg)
 {
-	int linear = (int)(msg->linear * 5/2);
-	int angular = (int)(msg->angular * 5/2);
+	int linear = (int)(msg->linear * 5);
+	int angular = (int)(msg->angular * 5);
 
-	// Note, the channels are reversed because motor 2 is rotated around
-	ax3500.SetSpeed(AX3500::CHANNEL_LINEAR, angular);
-	ax3500.SetSpeed(AX3500::CHANNEL_STEERING, linear);
+	// Note, the channels are reversed and inverted because motor 2 is rotated 180*
+	ax3500.SetSpeed(AX3500::CHANNEL_LINEAR, -angular);
+	ax3500.SetSpeed(AX3500::CHANNEL_STEERING, -linear);
 }
 
 int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "glados_node");
 
+	std::cout << "Connecting to GLaDOS motor controller...\n";
 	ax3500.Open("/dev/ttyUSB0");
 
 	ros::NodeHandle n;
