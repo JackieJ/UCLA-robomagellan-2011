@@ -170,7 +170,7 @@ public:
 	 *
 	 * Command: \0 (null character)
 	 */
-	void ResetWatchdogTimer();
+	void TickleWatchdogTimer();
 
 	/*
 	 * This query will cause the controller to return the actual amount of power

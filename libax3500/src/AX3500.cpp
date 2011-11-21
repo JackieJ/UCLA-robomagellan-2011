@@ -352,7 +352,7 @@ void AX3500::watchdog_run()
 		boost::system_time timeout = boost::get_system_time() + boost::posix_time::milliseconds(900);
 		watchdog_condition.timed_wait(private_mutex, timeout);
 		if (m_bRunning)
-			ResetWatchdogTimer();
+			TickleWatchdogTimer();
 	}
 }
 
@@ -481,7 +481,7 @@ void AX3500::ResetEncoder(Encoder encoder)
 	io_condition.notify_one();
 }
 
-void AX3500::ResetWatchdogTimer()
+void AX3500::TickleWatchdogTimer()
 {
 	// Make the tuple
 	boost::shared_ptr<std::string>      cmd_ptr(new std::string(""));
