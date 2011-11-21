@@ -29,7 +29,7 @@ int main(int argc, char **argv)
 	ros::init(argc, argv, "glados_node");
 
 	std::cout << "Connecting to GLaDOS motor controller...\n";
-	ax3500.Open("/dev/ttyUSB0");
+	ax3500.Open("/dev/ttyUSB0", true); // Enable safety cutoff
 
 	ros::NodeHandle n;
 	ros::Subscriber sub = n.subscribe("turtle1/command_velocity", 1000, ReceiveVelocity);
