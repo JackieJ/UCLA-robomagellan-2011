@@ -232,7 +232,7 @@ void AX3500::io_run()
 
 		// On entry, release mutex and suspend this thread. On return, reacquire mutex
 		while (io_queue.empty() && m_bRunning)
-			io_condition.wait(io_mutex); // TODO: do I wait on io_lock or io_mutex?
+			io_condition.wait(io_lock);
 
 		// If we were awaken to exit, then clean up shop and die a quiet death
 		if (!m_bRunning)
