@@ -232,7 +232,7 @@ void AX3500::io_run()
 
 		// On entry, release mutex and suspend this thread. On return, reacquire mutex
 		while (io_queue.empty() && m_bRunning)
-			io_condition.wait(io_lock);
+			io_condition.wait(io_lock); // only wait on a locked mutex
 
 		// If we were awaken to exit, then clean up shop and die a quiet death
 		if (!m_bRunning)
@@ -346,10 +346,12 @@ void AX3500::io_run()
 void AX3500::watchdog_run()
 {
 	boost::mutex private_mutex;
+	boost::mutex::scoped_lock private_lock(private_mutex);
+
 	while (m_bRunning)
 	{
 		boost::system_time timeout = boost::get_system_time() + boost::posix_time::milliseconds(900);
-		watchdog_condition.timed_wait(private_mutex, timeout);
+		watchdog_condition.timed_wait(private_lock, timeout);
 		if (m_bRunning)
 			TickleWatchdogTimer();
 	}
@@ -521,8 +523,9 @@ void AX3500::QueryMotorPower(unsigned char &Motor1_relative, unsigned char &Moto
 	}
 
 	// Wait on a private mutex to avoid deadlock
-	boost::mutex mutex;
-	query_condition->wait(mutex);
+	boost::mutex private_mutex;
+	boost::mutex::scoped_lock private_lock(private_mutex);
+	query_condition->wait(private_lock);
 
 	// Get the response
 	Motor1_relative = response[0];
@@ -545,9 +548,9 @@ void AX3500::QueryMotorCurrent(float &Motor1_amps, float &Motor2_amps)
 		io_condition.notify_one();
 	}
 
-	// Wait on a private mutex to avoid deadlock
-	boost::mutex mutex;
-	query_condition->wait(mutex);
+	boost::mutex private_mutex;
+	boost::mutex::scoped_lock private_lock(private_mutex);
+	query_condition->wait(private_lock);
 
 	// Get the response
 	Motor1_amps = (unsigned char)response[0] / 2.0f;
@@ -570,9 +573,9 @@ void AX3500::QueryAnalogInputs12(float &Input1_volts, float &Input2_volts)
 		io_condition.notify_one();
 	}
 
-	// Wait on a private mutex to avoid deadlock
-	boost::mutex mutex;
-	query_condition->wait(mutex);
+	boost::mutex private_mutex;
+	boost::mutex::scoped_lock private_lock(private_mutex);
+	query_condition->wait(private_lock);
 
 	// Convert to volts (page 145)
 	Input1_volts = ((float)response[0] + 0x80) * 5.0f / 255;
@@ -595,9 +598,9 @@ void AX3500::QueryAnalogInputs34(float &Input3_volts, float &Input4_volts)
 		io_condition.notify_one();
 	}
 
-	// Wait on a private mutex to avoid deadlock
-	boost::mutex mutex;
-	query_condition->wait(mutex);
+	boost::mutex private_mutex;
+	boost::mutex::scoped_lock private_lock(private_mutex);
+	query_condition->wait(private_lock);
 
 	// Convert to volts
 	Input3_volts = ((float)response[0] + 0x80) * 5.0f / 255;
@@ -620,9 +623,9 @@ void AX3500::QueryTemperature(int &Thermistor1_celsius, int &Thermistor2_celsius
 		io_condition.notify_one();
 	}
 
-	// Wait on a private mutex to avoid deadlock
-	boost::mutex mutex;
-	query_condition->wait(mutex);
+	boost::mutex private_mutex;
+	boost::mutex::scoped_lock private_lock(private_mutex);
+	query_condition->wait(private_lock);
 
 	// Adjust for nonlinear nature of thermistors
 	Thermistor1_celsius = toCelsius(response[0]);
@@ -686,9 +689,9 @@ void AX3500::QueryBatteryVoltages(float &MainBattery_volts, float &PowerControl_
 		io_condition.notify_one();
 	}
 
-	// Wait on a private mutex to avoid deadlock
-	boost::mutex mutex;
-	query_condition->wait(mutex);
+	boost::mutex private_mutex;
+	boost::mutex::scoped_lock private_lock(private_mutex);
+	query_condition->wait(private_lock);
 
 	// Convert to volts (page 67)
 	MainBattery_volts = 55.0f * ((unsigned char)response[0]) / 256;
@@ -711,9 +714,9 @@ void AX3500::QueryDigitalInputs(bool &InputE, bool &InputF, bool &EmergencySwitc
 		io_condition.notify_one();
 	}
 
-	// Wait on a private mutex to avoid deadlock
-	boost::mutex mutex;
-	query_condition->wait(mutex);
+	boost::mutex private_mutex;
+	boost::mutex::scoped_lock private_lock(private_mutex);
+	query_condition->wait(private_lock);
 
 	// Get the response
 	InputE = (response[0] == 1);
@@ -742,9 +745,9 @@ void AX3500::ReadMemory(char address, char &value)
 		io_condition.notify_one();
 	}
 
-	// Wait on a private mutex to avoid deadlock
-	boost::mutex mutex;
-	query_condition->wait(mutex);
+	boost::mutex private_mutex;
+	boost::mutex::scoped_lock private_lock(private_mutex);
+	query_condition->wait(private_lock);
 
 	// Get the value, ignore the confirmation (+/-)
 	value = response[0];
@@ -777,8 +780,9 @@ void AX3500::WriteMemory(char address, char value)
 		io_condition.notify_one();
 	}
 
-	boost::mutex mutex;
-	query_condition->wait(mutex);
+	boost::mutex private_mutex;
+	boost::mutex::scoped_lock private_lock(private_mutex);
+	query_condition->wait(private_lock);
 }
 
 void AX3500::ReadEncoder(Encoder encoder, EncoderCounterMode mode, int &Encoder_ticks)
@@ -835,9 +839,9 @@ void AX3500::ReadEncoder(Encoder encoder, EncoderCounterMode mode, int &Encoder_
 		io_condition.notify_one();
 	}
 
-	// Wait on a private mutex to avoid deadlock
-	boost::mutex mutex;
-	query_condition->wait(mutex);
+	boost::mutex private_mutex;
+	boost::mutex::scoped_lock private_lock(private_mutex);
+	query_condition->wait(private_lock);
 
 	// Response is a 32-bit number in little endian format
 	Encoder_ticks = ((unsigned char)response[0] << (8*0)) +
@@ -862,9 +866,9 @@ void AX3500::ReadSpeed(char &Encoder1_relative, char &Encoder2_relative)
 		io_condition.notify_one();
 	}
 
-	// Wait on a private mutex to avoid deadlock
-	boost::mutex mutex;
-	query_condition->wait(mutex);
+	boost::mutex private_mutex;
+	boost::mutex::scoped_lock private_lock(private_mutex);
+	query_condition->wait(private_lock);
 
 	// Get the response
 	Encoder1_relative = response[0];
@@ -887,9 +891,9 @@ void AX3500::ReadFilteredSpeed(char &Encoder1_relative, char &Encoder2_relative)
 		io_condition.notify_one();
 	}
 
-	// Wait on a private mutex to avoid deadlock
-	boost::mutex mutex;
-	query_condition->wait(mutex);
+	boost::mutex private_mutex;
+	boost::mutex::scoped_lock private_lock(private_mutex);
+	query_condition->wait(private_lock);
 
 	// Get the response
 	Encoder1_relative = response[0];
@@ -912,9 +916,9 @@ void AX3500::ReadQuadrature(bool &Switch1, bool &Switch2, bool &Switch3, bool &S
 		io_condition.notify_one();
 	}
 
-	// Wait on a private mutex to avoid deadlock
-	boost::mutex mutex;
-	query_condition->wait(mutex);
+	boost::mutex private_mutex;
+	boost::mutex::scoped_lock private_lock(private_mutex);
+	query_condition->wait(private_lock);
 
 	// Get the response
 	Switch1 = ((response[0] >> 0) % 2 == 1);
@@ -944,9 +948,9 @@ void AX3500::ReadEncoderMemory(char address, char &value)
 		io_condition.notify_one();
 	}
 
-	// Wait on a private mutex to avoid deadlock
-	boost::mutex mutex;
-	query_condition->wait(mutex);
+	boost::mutex private_mutex;
+	boost::mutex::scoped_lock private_lock(private_mutex);
+	query_condition->wait(private_lock);
 
 	// Get the value, ignore the confirmation (+/-)
 	value = response[0];
@@ -980,8 +984,9 @@ void AX3500::WriteEncoderMemory(char address, char value)
 		io_condition.notify_one();
 	}
 
-	boost::mutex mutex;
-	query_condition->wait(mutex);
+	boost::mutex private_mutex;
+	boost::mutex::scoped_lock private_lock(private_mutex);
+	query_condition->wait(private_lock);
 }
 
 unsigned int AX3500::fromHex32(const char *src) const
