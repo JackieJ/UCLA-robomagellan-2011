@@ -322,10 +322,16 @@ void AX3500::io_run()
 				debug_in(line);
 			}
 
-			// Some commands, like !A00, reply with a plus or minus. Read this,
-			// but don't do anything if we don't have a container to put it in.
-			if (isCommand(cmd_copy.c_str()) && line[0] == '-')
+			// Some commands, like !A00, reply with a plus or minus. If it's a
+			// minus, don't store the response because '-' (0x2D) might be
+			// interpreted as a result
+			if (line[0] == '-')
+			{
+				//response[i] = '-'; // commented out
 				debug_error("Command failed: " << cmd_copy);
+				break;
+			}
+
 			if (!response)
 				continue;
 
@@ -342,13 +348,6 @@ void AX3500::io_run()
 			// Special cases
 			if (line[0] == '+')
 				response[i] = '+';
-			else if (line[0] == '-')
-			{
-				// Command failed. No more responses come after this line. Don't store
-				// the response because '-' (0x2D) might be interpreted as a result
-				//response[i] = '-';
-				break;
-			}
 			else // response is two hex characters NN
 				response[i] = fromHex(line.c_str());
 		}
