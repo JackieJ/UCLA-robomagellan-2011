@@ -145,9 +145,6 @@ bool AX3500::Open(std::string device, bool safetyCutoff /* = false */)
 		}
 	}
 
-	m_deviceName = device;
-	m_bSafetyCutoffOption = safetyCutoff;
-
 	// Rev up the IO thread
 	m_bRunning = true;
 	boost::thread t(boost::bind(&AX3500::io_run, this));
@@ -156,6 +153,8 @@ bool AX3500::Open(std::string device, bool safetyCutoff /* = false */)
 	// Avoid race conditions by letting the IO thread fully initialize
 	usleep(100000); // 0.1s
 
+	m_bSafetyCutoffOption = safetyCutoff;
+
 	// Get the input control mode and watchdog state
 	//   Value  Mode
 	//       0    R/C Radio mode (default)
@@ -163,7 +162,6 @@ bool AX3500::Open(std::string device, bool safetyCutoff /* = false */)
 	//       2    RS232, with watchdog
 	//       3    Analog mode
 	char value;
-	bool bWatchdogEnabled;
 	ReadMemory(AX3500_FLASH_INPUT_CONTROL_MODE, value);
 	switch (value)
 	{
@@ -171,25 +169,48 @@ bool AX3500::Open(std::string device, bool safetyCutoff /* = false */)
 	case 3:
 		// Start up in RS232 mode next time
 		WriteMemory(AX3500_FLASH_INPUT_CONTROL_MODE, 0x02);
-		// If safety cutoff is true, disable the watchdog timer thread and let
-		// the AX3500's hardware watchdog take over
-		bWatchdogEnabled = !safetyCutoff;
+		break;
+	case 1:
+		if (!safetyCutoff)
+		{
+			// No hardware watchdog to tickle, no need for watchdog thread to run
+			safetyCutoff = true;
+		}
+		else
+		{
+			// Hardware support is missing. Enable it and reset the board
+			WriteMemory(AX3500_FLASH_INPUT_CONTROL_MODE, 0x02);
+
+			write(m_port, boost::asio::buffer(COMMAND_RESET, sizeof(COMMAND_RESET) - 1));
+			debug_out(COMMAND_RESET);
+
+			line = "";
+			for (int i = 0; line.compare("OK") != 0; ++i)
+			{
+				if (i == 5) // after 5 lines of not-OK (remember, startup could be 4 lines)
+				{
+					m_port.close();
+					return false;
+				}
+				read_until(m_port, input, DELIMITER_CHAR);
+				std::getline(is, line, DELIMITER_CHAR);
+				debug_in(line);
+			}
+		}
 		break;
 	case 2:
 	default:
-		bWatchdogEnabled = !safetyCutoff;
-		break;
-	case 1:
-		bWatchdogEnabled = false; // No hardware support for safety cutoff
 		break;
 	}
 
-	// Start the watchdog thread if necessary
-	if (bWatchdogEnabled)
+	// Disable the AX3500's safety cutoff by starting the watchdog thread
+	if (!safetyCutoff)
 	{
 		boost::thread t2(boost::bind(&AX3500::watchdog_run, this));
 		watchdog_thread.swap(t2);
 	}
+
+	m_deviceName = device;
 
 	return true;
 }
