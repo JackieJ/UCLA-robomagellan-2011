@@ -11,7 +11,6 @@
 #ifndef AX3500_H_
 #define AX3500_H_
 
-#include <iostream> // for debug cout's
 #include <vector>
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
@@ -20,9 +19,12 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/shared_array.hpp>
 
-/* Turn on debug coding. Serial port traffic will not be mirrored by std::cout */
-#define DEBUG 1
+/* Allow serial port traffic (i/o) to be displayed on std::cout */
+//#define DEBUG_SERIAL_IO
 
+#if defined(DEBUG_SERIAL_IO)
+#include <iostream> // for debug cout's
+#endif
 
 /* Reference of possible MCU memory addresses */
 #define AX3500_FLASH_INPUT_CONTROL_MODE    0x00
@@ -527,16 +529,15 @@ private:
 	// Debugging commands
 	inline void debug_out(std::string out_str)
 	{
-#if defined(DEBUG)
+#if defined(DEBUG_SERIAL_IO)
 		std::cout << "< " << out_str;
 #endif
 	}
 	inline void debug_in(std::string in_str)
 	{
-#if defined(DEBUG)
+#if defined(DEBUG_SERIAL_IO)
 		std::cout << "> " << in_str << '\n';
 #endif
-
 	}
 };
 
