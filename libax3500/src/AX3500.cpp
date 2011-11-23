@@ -26,8 +26,6 @@
 #include <boost/bind.hpp>
 #include <iostream>
 
-using std::cout;
-
 #define DELIMITER_CHAR '\r'
 #define DELIMITER "\r"
 
@@ -54,8 +52,7 @@ bool AX3500::Open(std::string device, bool safetyCutoff /* = false */)
 	m_port.open(device.c_str());
 	if (!m_port.is_open())
 	{
-		// Log: failed to open serial port
-		cout << "Failed to open serial port: " << device << '\n';
+		debug_error("Failed to open serial port: " + device);
 		return false;
 	}
 
@@ -93,7 +90,7 @@ bool AX3500::Open(std::string device, bool safetyCutoff /* = false */)
 	std::getline(is, line, DELIMITER_CHAR);
 	debug_in(line);
 
-	// Sometimes after Reset(), instead of echoing COMMAND_RESET, it will print OK,
+	// Sometimes after Reset() it will print OK instead of echoing COMMAND_RESET,
 	// so I guess this means we can skip a bunch of stuff
 	if (line.compare("OK") != 0)
 	{
@@ -140,6 +137,7 @@ bool AX3500::Open(std::string device, bool safetyCutoff /* = false */)
 		if (line.substr(line.length() - 2, 2).compare("OK") != 0)
 		{
 			// bail out
+			debug_error("Failed to open serial port, confused by device " + device);
 			write(m_port, boost::asio::buffer(COMMAND_RESET, sizeof(COMMAND_RESET) - 1));
 			debug_out(COMMAND_RESET);
 			m_port.close();
@@ -301,12 +299,10 @@ void AX3500::io_run()
 		cmd_copy = cmd_copy.substr(0, cmd_copy.length() - 1);
 
 		// Verify that the command is echoed back to us. Strip accumulated W's from line
-#if defined(DEBUG)
 		while (line[0] == 'W')
 			line = line.substr(1, line.length() - 1);
 		if (cmd_copy.compare(line) != 0)
-			cout << "Error: expecting " << cmd_copy << ", received " << line << '\n';
-#endif
+			debug_error("Error: expecting " + cmd_copy + ", received " + line);
 
 		// Read one line for each requested response. If a command lied about how
 		// many responses it should get, this will block FOREVER. God help us all.
@@ -329,7 +325,7 @@ void AX3500::io_run()
 			// Some commands, like !A00, reply with a plus or minus. Read this,
 			// but don't do anything if we don't have a container to put it in.
 			if (isCommand(cmd_copy.c_str()) && line[0] == '-')
-				cout << "Command failed: " << cmd_copy;
+				debug_error("Command failed: " << cmd_copy);
 			if (!response)
 				continue;
 
@@ -348,9 +344,9 @@ void AX3500::io_run()
 				response[i] = '+';
 			else if (line[0] == '-')
 			{
-				// Command failed. No more responses come after this line
+				// Command failed. No more responses come after this line. Don't store
+				// the response because '-' (0x2D) might be interpreted as a result
 				//response[i] = '-';
-				response[i] = 0; // Use this because '-' (0x2D) might be interpreted as a response
 				break;
 			}
 			else // response is two hex characters NN

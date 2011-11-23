@@ -549,13 +549,19 @@ private:
 	inline void debug_out(std::string out_str)
 	{
 #if defined(DEBUG_SERIAL_IO)
-		std::cout << "< " << out_str;
+		std::cout << "<- " << out_str;
 #endif
 	}
 	inline void debug_in(std::string in_str)
 	{
 #if defined(DEBUG_SERIAL_IO)
-		std::cout << "> " << in_str << '\n';
+		std::cout << "-> " << in_str << '\n';
+#endif
+	}
+	inline void debug_error(std::string err_str)
+	{
+#if defined(DEBUG_SERIAL_IO)
+		std::cout << err_str << '\n';
 #endif
 	}
 };
