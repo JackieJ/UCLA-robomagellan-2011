@@ -33,7 +33,7 @@
 #define COMMAND_ENTER_SERIAL_MODE DELIMITER DELIMITER DELIMITER DELIMITER DELIMITER \
                                   DELIMITER DELIMITER DELIMITER DELIMITER DELIMITER // x 10
 
-AX3500::AX3500() : m_io(), m_port(m_io), m_bSafetyCutoffOption(false), m_bRunning(false), m_bWatchdogEnabled(false)
+AX3500::AX3500() : m_io(), m_port(m_io), m_bSafetyCutoffOption(false), m_bRunning(false)
 {
 }
 
@@ -163,6 +163,7 @@ bool AX3500::Open(std::string device, bool safetyCutoff /* = false */)
 	//       2    RS232, with watchdog
 	//       3    Analog mode
 	char value;
+	bool bWatchdogEnabled;
 	ReadMemory(AX3500_FLASH_INPUT_CONTROL_MODE, value);
 	switch (value)
 	{
@@ -172,19 +173,19 @@ bool AX3500::Open(std::string device, bool safetyCutoff /* = false */)
 		WriteMemory(AX3500_FLASH_INPUT_CONTROL_MODE, 0x02);
 		// If safety cutoff is true, disable the watchdog timer thread and let
 		// the AX3500's hardware watchdog take over
-		m_bWatchdogEnabled = !safetyCutoff;
+		bWatchdogEnabled = !safetyCutoff;
 		break;
 	case 2:
 	default:
-		m_bWatchdogEnabled = !safetyCutoff;
+		bWatchdogEnabled = !safetyCutoff;
 		break;
 	case 1:
-		m_bWatchdogEnabled = false; // No hardware support for safety cutoff
+		bWatchdogEnabled = false; // No hardware support for safety cutoff
 		break;
 	}
 
 	// Start the watchdog thread if necessary
-	if (m_bWatchdogEnabled)
+	if (bWatchdogEnabled)
 	{
 		boost::thread t2(boost::bind(&AX3500::watchdog_run, this));
 		watchdog_thread.swap(t2);
@@ -202,7 +203,7 @@ bool AX3500::Open(std::string device, bool safetyCutoff /* = false */)
 void AX3500::Close()
 {
 	// Kill the IO thread if running
-	m_bRunning = m_bWatchdogEnabled = false;
+	m_bRunning = false;
 	io_condition.notify_one();
 	io_thread.join();
 

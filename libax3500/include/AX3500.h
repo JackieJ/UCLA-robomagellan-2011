@@ -433,11 +433,11 @@ private:
 	 * the echoed command). This value must be correct! It can be obtained from
 	 * the AX3500 user manual.
 	 */
-	typedef boost::tuple< boost::shared_ptr<std::string> /* command */,
-	                      boost::shared_ptr<boost::condition> /* wait condition */,
-	                      boost::shared_array<char> /* result(s), this can be null */,
-	                      int /* count of expected responses*/
-	                    > io_queue_t;
+	typedef boost::tuple< boost::shared_ptr<std::string>, /* command */
+	                      boost::shared_ptr<boost::condition>, /* wait condition */
+	                      boost::shared_array<char>, /* result(s), this can be null */
+	                      int /* count of expected responses */
+	                  > io_queue_t;
 
 	/*
 	 * Inserts the command in the command queue. Command is placed after other
@@ -446,32 +446,35 @@ private:
 	 */
 	void AddCommand(const io_queue_t &command, std::vector<io_queue_t> &queue) const;
 
-	std::string              m_deviceName; // Only used for Reset() and GetDeviceName()
+	// Member variables!
+
+	std::string              m_deviceName; // Only used for Reset() <TODO: and GetDeviceName()>
 	boost::asio::io_service  m_io; // The I/O service talks to the serial device
 	boost::asio::serial_port m_port;
 	bool                     m_bSafetyCutoffOption; // Only stored for the Reset() command
-
-	boost::thread io_thread;
-	bool          m_bRunning;
-
-	boost::thread watchdog_thread;
-	bool          m_bWatchdogEnabled;
-
-	std::vector<io_queue_t> io_queue;
+	
+	/*
+	 * Serial port access is only monitored by a mutex in the Open() and Close()
+	 * functions. Outside of these functions, only io_run() touches the serial
+	 * port, and io_run() is killed before Open()/Close() acquires the mutex.
+	 */
+	mutable boost::mutex     open_mutex; // This mutex is mutable so that IsOpen() const may use it
 
 	/*
-	 * Serial port access is only moderated by a mutex in the Open() and Close()
-	 * functions. Outside of these functions, the only function that is allowed
-	 * to touch the serial port is io_run(). It doesn't have a mutex for the serial
-	 * port, only for its queue of serial port data. The reason for this is so that
-	 * Close() can abort the io_thread, and it's not a problem because Close()
-	 * waits for the io_thread to die before commencing serial port access.
+	 * Because io_run() only exists once (creation upon a successful Open()),
+	 * it doesn't require its own serial port mutex. Instead, serial port access
+	 * is synchronized to queue of IO requests, io_queue; io_queue is monitored
+	 * using io_mutex.
 	 */
-	mutable boost::mutex open_mutex; // This mutex is mutable so that IsOpen() const may use it
-	mutable boost::mutex io_mutex;
-	boost::condition io_condition;
-	boost::condition watchdog_condition;
+	boost::thread            io_thread;
+	std::vector<io_queue_t>  io_queue; // see documentation above for io_queue_t
+	mutable boost::mutex     io_mutex;
+	boost::condition         io_condition;
 
+	boost::thread            watchdog_thread;
+	boost::condition         watchdog_condition;
+	bool                     m_bRunning; // are the IO and watchdog threads running
+	
 	// Helper functions
 
 	/*
@@ -553,12 +556,14 @@ private:
 		std::cout << "<- " << out_str;
 #endif
 	}
+
 	inline void debug_in(std::string in_str)
 	{
 #if defined(DEBUG_SERIAL_IO)
 		std::cout << "-> " << in_str << '\n';
 #endif
 	}
+
 	inline void debug_error(std::string err_str)
 	{
 #if defined(DEBUG_SERIAL_ERROR)
