@@ -40,6 +40,7 @@
 
 /* Allow serial port traffic (i/o) to be displayed on std::cout */
 //#define DEBUG_SERIAL_IO
+#define DEBUG_SERIAL_ERROR
 
 #if defined(DEBUG_SERIAL_IO)
 #include <iostream> // for debug cout's
@@ -560,7 +561,7 @@ private:
 	}
 	inline void debug_error(std::string err_str)
 	{
-#if defined(DEBUG_SERIAL_IO)
+#if defined(DEBUG_SERIAL_ERROR)
 		std::cout << err_str << '\n';
 #endif
 	}
