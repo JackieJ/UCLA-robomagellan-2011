@@ -1,0 +1,19 @@
+Instructions for installing UCLA-Robomagellan software
+
+This guide assumes you have just installed ROS on a fresh copy of Ubuntu.
+
+1. Install the other pre-requisites:
+sudo apt-get install git-core
+
+2. Install Eclipse CDT: Open Software Center, search for and install the eclipse-cdt program
+
+3. Follow the steps here to create a ROS workspace
+http://www.ros.org/wiki/ROS/Tutorials/InstallingandConfiguringROSEnvironment
+
+4. Clone the UCLA-robomagellan project from garbear (or your own github account if you have a fork)
+git clone git://github.com/garbear/UCLA-robomagellan.git
+
+5. Compile the source
+cd UCLA-robomagellan
+???
+
