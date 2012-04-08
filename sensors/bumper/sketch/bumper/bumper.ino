@@ -1,5 +1,11 @@
 /* 
- * Button Example for Rosserial
+ * Forward Bumper
+ * Aamoy Gupta - aamoyg@linux.ucla.edu
+ * Description: Array of buttons is connected to pin 7 and gnd; this program indicates if bumper button(s) 
+ *              is/are pushed and publishes bumper state to appropriate rostopic
+ * Testing: roscore
+ * rosrun rosserial_python serial_node.py /devttyUSB1 <- current handling this process is at /devttyUSB1 [make sure IDE settings are correct before upload]
+ * rostopic echo pushed
  */
 
 #include <ros.h>
