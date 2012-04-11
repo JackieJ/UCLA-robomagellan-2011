@@ -350,7 +350,7 @@ void AX3500::io_run()
 			if (line[0] == '-')
 			{
 				//response[i] = '-'; // commented out
-				debug_error("Command failed: " << cmd_copy);
+//				debug_error("Command failed: " << cmd_copy);
 				break;
 			}
 

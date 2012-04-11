@@ -31,8 +31,8 @@ class GpsClient(threading.Thread):
 		except StopIteration:
 			pass
 	def publish(self):
-		#self.fixpub.publish()
-		#self.statuspub.publish()
+		#self.fixpub.publish(GPSFix(self.current_value)
+		#self.statuspub.publish(GPSStatus(self.current_status))
 		pass
 if __name__ == '__main__':
 	gpsp = GpsClient()

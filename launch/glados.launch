@@ -1,7 +1,0 @@
-<launch>
-	 
-	<node name="glados_control" pkg="UCLA-robomagellan" type="glados_control" />
-	
-	<!--   GPSD client information for connecting to  -->
-  	<node name="gpsd_client" pkg="gpsd_client" type="gpsd_client"  host="localhost" port="2947" />
-</launch>

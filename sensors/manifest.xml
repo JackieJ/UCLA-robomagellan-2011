@@ -13,6 +13,7 @@
   <depend package="rospy"/>
   <!-- message dependencies -->
   <depend package="gpsd_client"/>
-
+  <depend package="bumper"/>
+  <depend package="gyro" />
 </package>
 

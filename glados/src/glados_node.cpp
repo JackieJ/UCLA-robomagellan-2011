@@ -32,31 +32,40 @@
 #include "turtlesim/Velocity.h"
 // This lets us interface with the AX3500 motor controller
 #include "AX3500.h"
-
+#include "std_msgs/String.h"
 
 AX3500 ax3500;
 
 void ReceiveVelocity(const turtlesim::Velocity::ConstPtr& msg)
 {
-	int linear = (int)(msg->linear * 5);
-	int angular = (int)(msg->angular * 5);
+  //ROS_INFO("velocity: [%s]", msg->data.c_str());
+  int linear = (int)(msg->linear * 5);
+  int angular = (int)(msg->angular * 5);
 
-	// Note, the channels are reversed and inverted because motor 2 is rotated 180*
-	ax3500.SetSpeed(AX3500::CHANNEL_LINEAR, -angular);
-	ax3500.SetSpeed(AX3500::CHANNEL_STEERING, -linear);
+  // Note, the channels are reversed and inverted because motor 2 is rotated 180*
+  ax3500.SetSpeed(AX3500::CHANNEL_LINEAR, -angular);
+  ax3500.SetSpeed(AX3500::CHANNEL_STEERING, -linear);
 }
+
+/*
+void SensorBasedNavigator(const sensor::integratedMsg::ConstPtr& msg) {
+  
+}
+*/
+
+
 
 int main(int argc, char **argv)
 {
-	ros::init(argc, argv, "glados_node");
-
-	std::cout << "Connecting to GLaDOS motor controller...\n";
-	ax3500.Open("/dev/ttyUSB0", true); // Enable safety cutoff
-
-	ros::NodeHandle n;
-	ros::Subscriber sub = n.subscribe("turtle1/command_velocity", 1000, ReceiveVelocity);
-	ros::spin();
-
-	ax3500.Close();
-	return 0;
+  ros::init(argc, argv, "glados_node");
+  
+  std::cout << "Connecting to GLaDOS motor controller...\n";
+  ax3500.Open("/dev/ttyUSB0", true); // Enable safety cutoff
+  
+  ros::NodeHandle n;
+  ros::Subscriber sub = n.subscribe("turtle1/command_velocity", 1000, ReceiveVelocity);
+  ros::spin();
+  
+  ax3500.Close();
+  return 0;
 }
