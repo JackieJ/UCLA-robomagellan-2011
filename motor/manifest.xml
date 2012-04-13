@@ -1,0 +1,19 @@
+<package>
+  <description brief="motor">
+
+     GLaDOS Robot Package
+
+  </description>
+  <author>Garrett Brown</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/glados</url>
+  <!-- c++ dependencies -->
+  <depend package="roscpp"/>
+  <!-- message dependencies -->
+  <depend package="turtlesim"/>
+  <!-- AX3500 motor controller library -->
+  <depend package="libax3500"/>
+
+</package>
+
