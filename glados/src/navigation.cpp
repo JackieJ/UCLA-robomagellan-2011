@@ -66,7 +66,7 @@ int main(int argc, char **argv)
 
 		try
 		{
-			listener.lookupTransform("base_footprint", "odom_combined", ros::Time(0), current_transform));
+			listener.lookupTransform("base_footprint", "odom_combined", ros::Time(0), current_transform);
 		}
 		catch (const tf::TransformException &ex)
 		{
