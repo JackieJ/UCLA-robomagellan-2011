@@ -4,6 +4,12 @@
   IMU (Gyro & accelerometer)
   Bumper
 
+  Credits:
+  Asa Hammond
+  Aamoy Gupta - aamoyg@linux.ucla.edu
+  Ed Solis - edsolis1@engineering.ucla.edu
+
+  CMPS03 (Compass):
   This will display a value of 0 - 359 for a full rotation of the
   compass.
 
@@ -15,6 +21,10 @@
   resistors.
   A switch to callibrate the CMPS03 can be connected between pin 6
   of the CMPS03 and the ground.
+  
+  Bumper: Array of buttons is connected to pin 7 and gnd; this
+          program indicates if bumper button(s) is/are pushed
+          and publishes bumper state to appropriate rostopic
 */
 
 #include <Wire.h>
@@ -22,6 +32,7 @@
 //#include <std_msgs/Float32.h>
 //#include <rosserial_arduino/Adc.h>
 #include <glados_sensors/imu.h>
+#include <std_msgs/Bool.h>
 
 ros::NodeHandle nh;
 
@@ -40,6 +51,17 @@ ros::Publisher p("imu", &imu_msg);
 
 #define ADDRESS 0x60 //defines address of compass
 
+std_msgs::Bool bumper_msg;
+ros::Publisher pub_bumper("bumped", &bumper_msg);
+
+const int bumper_pin = 7;
+const int led_pin = 13;
+
+bool last_reading;
+long last_debounce_time=0;
+long debounce_delay=50;
+bool bumper_published = true;
+
 void setup(){
 
   Wire.begin(); //conects I2C
@@ -47,7 +69,17 @@ void setup(){
   nh.initNode();
 //  nh.advertise(pub_bearing);
   nh.advertise(p);
+  nh.advertise(pub_bumper);
+
   pinMode(13, OUTPUT);
+  pinMode(led_pin, OUTPUT);
+  pinMode(bumper_pin, INPUT);
+
+  //Enable the pullup resistor on the button
+  PORTD |= (1<<PD7);
+
+  //The button is a normally button
+  last_reading = ! digitalRead(bumper_pin);
 }
 
 //We average the analog reading to elminate some of the noise
@@ -61,14 +93,14 @@ int averageAnalog(int pin){
 void loop(){
   byte highByte;
   byte lowByte;
-   Wire.beginTransmission(ADDRESS);//starts communication with cmps03
-   Wire.write(2);                  //Sends the register we wish to read
-   Wire.endTransmission();
+  Wire.beginTransmission(ADDRESS);//starts communication with cmps03
+  Wire.write(2);                  //Sends the register we wish to read
+  Wire.endTransmission();
   
-   Wire.requestFrom(ADDRESS, 2);   //requests high byte
-   while(Wire.available() < 2);    //while there is a byte to receive
-   highByte = Wire.read();         //reads the byte as an integer
-   lowByte = Wire.read();
+  Wire.requestFrom(ADDRESS, 2);   //requests high byte
+  while(Wire.available() < 2);    //while there is a byte to receive
+  highByte = Wire.read();         //reads the byte as an integer
+  lowByte = Wire.read();
 
 
   imu_msg.bearing = ((highByte<<8)+lowByte)/10.0;
@@ -101,6 +133,27 @@ void loop(){
   imu_msg.gy = (yRaw - c_ZeroY ) * c_Scaling ; // degrees / sec
 
   p.publish(&imu_msg);
+
+  // Bumper code:
+  bool reading = ! digitalRead(bumper_pin);
+  
+  if (last_reading!= reading){
+      last_debounce_time = millis();
+      bumper_published = false;
+  }
+  
+  // if the button value has not changed for the debounce delay,
+  // we know it's stable
+  if ( !bumper_published && (millis() - last_debounce_time)
+  	> debounce_delay)
+  {
+    digitalWrite(led_pin, reading);
+    bumper_msg.data = reading;
+    pub_bumper.publish(&bumper_msg);
+    bumper_published = true;
+  }
+
+  last_reading = reading;
 
   nh.spinOnce();
   delay(100);
