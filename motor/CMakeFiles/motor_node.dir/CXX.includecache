@@ -27,12 +27,8 @@ iostream
 /home/glados/ros_workspace/UCLA-robomagellan/motor/src/motor.cpp
 ros/ros.h
 /home/glados/ros_workspace/UCLA-robomagellan/motor/src/ros/ros.h
-turtlesim/Velocity.h
-/home/glados/ros_workspace/UCLA-robomagellan/motor/src/turtlesim/Velocity.h
 AX3500.h
 /home/glados/ros_workspace/UCLA-robomagellan/motor/src/AX3500.h
-std_msgs/String.h
-/home/glados/ros_workspace/UCLA-robomagellan/motor/src/std_msgs/String.h
 
 /opt/ros/electric/stacks/ros_comm/clients/cpp/roscpp/include/ros/advertise_options.h
 ros/forwards.h
@@ -510,10 +506,6 @@ ros/time.h
 
 /opt/ros/electric/stacks/ros_comm/clients/cpp/roscpp_traits/include/ros/message_forward.h
 
-/opt/ros/electric/stacks/ros_comm/clients/cpp/roscpp_traits/include/ros/message_operations.h
-ostream
--
-
 /opt/ros/electric/stacks/ros_comm/clients/cpp/roscpp_traits/include/ros/message_traits.h
 message_forward.h
 /opt/ros/electric/stacks/ros_comm/clients/cpp/roscpp_traits/include/ros/message_forward.h
@@ -533,28 +525,6 @@ boost/type_traits/remove_reference.hpp
 -
 boost/type_traits/remove_const.hpp
 -
-
-/opt/ros/electric/stacks/ros_comm/messages/std_msgs/msg_gen/cpp/include/std_msgs/String.h
-string
--
-vector
--
-map
--
-ostream
--
-ros/serialization.h
-/opt/ros/electric/stacks/ros_comm/messages/std_msgs/msg_gen/cpp/include/std_msgs/ros/serialization.h
-ros/builtin_message_traits.h
-/opt/ros/electric/stacks/ros_comm/messages/std_msgs/msg_gen/cpp/include/std_msgs/ros/builtin_message_traits.h
-ros/message_operations.h
-/opt/ros/electric/stacks/ros_comm/messages/std_msgs/msg_gen/cpp/include/std_msgs/ros/message_operations.h
-ros/time.h
-/opt/ros/electric/stacks/ros_comm/messages/std_msgs/msg_gen/cpp/include/std_msgs/ros/time.h
-ros/macros.h
-/opt/ros/electric/stacks/ros_comm/messages/std_msgs/msg_gen/cpp/include/std_msgs/ros/macros.h
-ros/assert.h
-/opt/ros/electric/stacks/ros_comm/messages/std_msgs/msg_gen/cpp/include/std_msgs/ros/assert.h
 
 /opt/ros/electric/stacks/ros_comm/tools/rosconsole/include/ros/assert.h
 ros/console.h
@@ -665,26 +635,4 @@ vector
 -
 time.h
 -
-
-/opt/ros/electric/stacks/ros_tutorials/turtlesim/msg_gen/cpp/include/turtlesim/Velocity.h
-string
--
-vector
--
-map
--
-ostream
--
-ros/serialization.h
-/opt/ros/electric/stacks/ros_tutorials/turtlesim/msg_gen/cpp/include/turtlesim/ros/serialization.h
-ros/builtin_message_traits.h
-/opt/ros/electric/stacks/ros_tutorials/turtlesim/msg_gen/cpp/include/turtlesim/ros/builtin_message_traits.h
-ros/message_operations.h
-/opt/ros/electric/stacks/ros_tutorials/turtlesim/msg_gen/cpp/include/turtlesim/ros/message_operations.h
-ros/time.h
-/opt/ros/electric/stacks/ros_tutorials/turtlesim/msg_gen/cpp/include/turtlesim/ros/time.h
-ros/macros.h
-/opt/ros/electric/stacks/ros_tutorials/turtlesim/msg_gen/cpp/include/turtlesim/ros/macros.h
-ros/assert.h
-/opt/ros/electric/stacks/ros_tutorials/turtlesim/msg_gen/cpp/include/turtlesim/ros/assert.h
 

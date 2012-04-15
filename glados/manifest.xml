@@ -1,19 +1,18 @@
 <package>
   <description brief="glados">
 
-     GLaDOS Robot Package
+     glados-state estimation
 
   </description>
-  <author>Garrett Brown</author>
+  <author>Jackie Jin</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/glados</url>
-  <!-- c++ dependencies -->
   <depend package="roscpp"/>
-  <!-- message dependencies -->
-  <depend package="turtlesim"/>
-  <!-- AX3500 motor controller library -->
+  <depend package="rospy"/>
+  <depend package="std_msgs"/>
+  <depend package="glados_sensors"/>
   <depend package="libax3500"/>
-
 </package>
+
 

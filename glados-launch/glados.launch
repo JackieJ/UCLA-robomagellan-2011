@@ -1,7 +1,9 @@
 <launch>
-	 
-	<node name="glados_control" pkg="UCLA-robomagellan" type="glados_control" />
-	
-	<!--   GPSD client information for connecting to  -->
-  	<node name="gpsd_client" pkg="sensors/gps/gpsd_client.py" type="GpsdClient"  host="localhost" port="2947" />
+	<node name="motor" pkg="motor" type="motor_node" />
+
+<!--   GPSD client information for connecting to  -->
+ 	<node name="gpsd_client" pkg="glados_sensors" type="gpsd_client.py"  />
+
+	<node name="cam" pkg="camera1394" type="camera1394_node" _video_mode="800x600_rgb8" _guid="00b09d01005c5123" />
+	<node name="imu" pkg="rosserial_python" type="serial_node.py" args="/dev/ttyUSB1" />
 </launch>
