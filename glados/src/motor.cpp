@@ -58,7 +58,7 @@ void gladosMotor::refresh()
     
     
     glados::odometry msg;
-    msg.left = (l_ticks / 10000. ) * .35 * 3.1415;
+    msg.left = (l_ticks / 10000. ) * .35 * 3.1415; // This is God speaking. DONT USE NUMBERS - #DEFINE YOUR VARIABLES!  // this is reality speaking, build something, don't talk about it.
     msg.right = (r_ticks / 10000. ) * .35 * 3.1415;
     msg.offset = ((l_ticks / 10000. ) * .35 * 3.1415) - ((r_ticks / 10000. ) * .35 * 3.1415);
     //   	cout<<"l encoder"<<l_msg.data<<endl;
