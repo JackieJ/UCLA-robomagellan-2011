@@ -5,5 +5,6 @@
  	<node name="gpsd_client" pkg="glados_sensors" type="gpsd_client.py"  />
 
 	<node name="cam" pkg="camera1394" type="camera1394_node" _video_mode="800x600_rgb8" _guid="00b09d01005c5123" />
+	<node name="threedcam" pkg="pmd_camcube_3_ros_pkg" type="pmd_camcube_3_node" />
 	<node name="imu" pkg="rosserial_python" type="serial_node.py" args="/dev/ttyUSB1" />
 </launch>

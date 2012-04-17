@@ -1,116 +1,119 @@
 #include "ros/ros.h"
+#include "geometry_msgs/Twist.h"
 #include "AX3500.h"
 #include "glados/stateEstimation.h"
 #include <string>
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
+#include "std_msgs/Float64.h"
+
 using namespace std;
 
-//testing
-//#include "glados/testMotorMsg.h"
-#include "geometry_msgs/Twist.h"
+class gladosMotor{
+		
+		unsigned int refreshRate;		
+		AX3500  ax3500;
+		ros::Publisher odometry_pub;
+		
+	public:
+		
+		unsigned int ticks_per_sec;		
+		void setMotorSpeed(const geometry_msgs::Twist::ConstPtr& msg);
+		void refresh();
+		void initMotorController();
+		void Close();
+		gladosMotor(int&, char**);
+};
 
-AX3500  ax3500;
+gladosMotor::gladosMotor(int& argc, char** argv){
+	
+	ros::init(argc,argv,"motor_node");
+	ros::NodeHandle n;
+	
+	odometry_pub = n.advertise<std_msgs::Float64>("/odometry", 1000);
+//	ros::Subscriber sub = n.subscribe("/cmd_vel", 1000, &gladosMotor::setMotorSpeed, &motorNodeH);
+//	ros::Subscriber sub = n.subscribe("/cmd_vel", 1000, &gladosMotor::setMotorSpeed, this);
+}
 
-//testing
-void pathReceiverFake(const geometry_msgs::Twist::ConstPtr& msg);
-void outputMotorData();
+void gladosMotor::setMotorSpeed(const geometry_msgs::Twist::ConstPtr& msg)
+{
+    //typecasting
+    char linear  = (char)(((msg->linear).x)*100);
+    char angular = (char)(((msg->angular).x)*100);
 
-//void pathReceiver(const glados::stateEstimation::ConstPtr& msg);
-//void publishMotorMsg();
+    //setting speed
+    ax3500.SetSpeed(AX3500::CHANNEL_LINEAR, -angular);
+    ax3500.SetSpeed(AX3500::CHANNEL_STEERING, -linear);
+}
 
-string USB_SERIAL_PORTS[3] = {"/dev/ttyUSB0","/dev/ttyUSB1","/dev/ttyUSB2"};
+void gladosMotor::refresh()
+{
+//	cout<<"starting refresh"<<endl;
+    int l_ticks, r_ticks;
+    ax3500.ReadEncoder(AX3500::ENCODER_1, AX3500::ABSOLUTE, l_ticks);
+    ax3500.ReadEncoder(AX3500::ENCODER_2, AX3500::ABSOLUTE, r_ticks);
 
-int main(int argc, char **argv) {
-  ros::init(argc, argv, "motor_node");
-  
+    std_msgs::Float64 l_msg,r_msg;
+    l_msg.data = (l_ticks / 10000. ) * .35 * 3.1415;
+    r_msg.data = (r_ticks / 10000. ) * .35 * 3.1415;
+//   	cout<<"l encoder"<<l_msg.data<<endl;
+//    ROS_INFO("wheel position %f,%f", l_msg.data,r_msg.data);
+    odometry_pub.publish(l_msg);
+}
+
+void gladosMotor::initMotorController()
+{
     bool isOpen = false;
+	string USB_SERIAL_PORTS[3] = {"/dev/ttyUSB0","/dev/ttyUSB1","/dev/ttyUSB2"}; 
+	
+    //port connection sanity check
+    int serial_port_counter = 0;
+    while (!isOpen) {
 
-  //port connection sanity check
-  int serial_port_counter = 0;
-  while (!isOpen) {
-    
-    cout<<"connecting to serial port..."<<endl;
-    
-    isOpen = ax3500.Open(USB_SERIAL_PORTS[serial_port_counter], false);
-    serial_port_counter++;
-    
-    if (serial_port_counter == 4) serial_port_counter = 0;
-  }
+      cout<<"connecting to serial port..."<<endl;
+
+      isOpen = ax3500.Open(USB_SERIAL_PORTS[serial_port_counter], false);
+      serial_port_counter++;
+
+      if (serial_port_counter == 4) serial_port_counter = 0;
+          cout<<"looping again"<<endl;
+      }
+	
+	cout << "Resetting encoders";
+	ax3500.ResetEncoder(AX3500::ENCODER_BOTH);
+	
+}
+void gladosMotor::Close()
+{
+	ax3500.Close();
+}
+
+int main(int argc, char **argv)
+{
   
-  //ros::NodeHandle n;
+  gladosMotor motorNodeH(argc,argv);
   
-  //cout<<"receiving twist msg"<<endl;
+  ros::NodeHandle n;
+  ros::Subscriber sub = n.subscribe("/cmd_vel", 1000, &gladosMotor::setMotorSpeed, &motorNodeH);
   
-  //testing
-  ax3500.SetSpeed(AX3500::CHANNEL_LINEAR, 5);
-  ax3500.SetSpeed(AX3500::CHANNEL_STEERING, -5);
+  int refreshRate = 10;
+  ros::Rate r(refreshRate); // 10 hz
   
-  
-  
-  //ros::Subscriber sub = n.subscribe("/cmd_vel", 1000, pathReceiverFake); 
-  //ros::Subscriber sub = n.subscribe("glados/stateEstimation", 1000, pathReceiver);
-  
-  cout << "Type \"q\" to quit";
-  
-  int count = 0;
-  string str;
-  getline(cin, str);
-  
-  cout << "Resetting encoder 1";
-  ax3500.ResetEncoder(AX3500::ENCODER_BOTH);
-  
+  motorNodeH.initMotorController();
+
+  cout << "pre while";
+//  while (ros::ok())
   while (true)
-  {
-    // wait for the wheel to revolve
-    string str;
-    getline(cin, str);
-    
-    int ticks;
-    ax3500.ReadEncoder(AX3500::ENCODER_1, AX3500::ABSOLUTE, ticks);
-    count++;
-    double avg = ticks / count;
-    
-    cout << "Average CPR: " << avg;
-    
-    if (str == "q")
-    {
-      cout << endl;
-      break;
-    }
-  }
-  
-  //cout<<"twist msg received"<<endl;
-  //ros::spin();
-  
-  ax3500.Close();
+	{
+//		cout << "start while";
+		motorNodeH.refresh();
+	    //    
+	    //... do some work ...
+		ros::spinOnce();
+//		cout << "spun once";
+	    r.sleep();
+	}
+  motorNodeH.Close();
   return 0;
-  
 }
-
-/*
-void pathReceiverFake(const geometry_msgs::Twist::ConstPtr& msg) {
-  
-  //typecasting
-  char linear = (char)(((msg->linear).x)*70);
-  char angular = (char)(((msg->angular).x)*70);
-  
-  //setting speed
-  ax3500.SetSpeed(AX3500::CHANNEL_1, -angular);
-  ax3500.SetSpeed(AX3500::CHANNEL_2, -linear);
-
-  outputMotorData();
-  
-}
-
-void outputMotorData() {
-  
-  char motorCon1Encoder;
-  char motorCon2Encoder;
-  ax3500.ReadSpeed(motorCon1Encoder,motorCon2Encoder);
-  cout<<"motorCon1:"<<(int)motorCon1Encoder<<endl;
-  cout<<"motorCon2:"<<(int)motorCon2Encoder<<endl;
-  
-}
-*/
-
