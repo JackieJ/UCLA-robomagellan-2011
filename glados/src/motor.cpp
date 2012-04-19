@@ -190,14 +190,28 @@ void gladosMotor::refresh()
 		avg_sqrd += (wheelspeed_buffer[i].left + wheelspeed_buffer[i].right) *
 				(wheelspeed_buffer[i].left + wheelspeed_buffer[i].right) / 4;
 	  }
-	  // Formula is sqrt((sum(x^2) - n * sum(x)^2) / (n - 1))
-	  msg2.left_std = sqrt((left_sqrd - buffer_length * msg2.left * msg2.left) / (buffer_length - 1));
-	  msg2.right_std = sqrt((right_sqrd - buffer_length * msg2.right * msg2.right) / (buffer_length - 1));
-	  msg2.avg_std = sqrt((avg_sqrd - buffer_length * msg2.avg * msg2.avg) / (buffer_length - 1));
+	  // Formula is variance = (sum(x^2) - sum(x)^2 / n) / (n - 1)
+	  msg2.left_variance = (left_sqrd - msg2.left * msg2.left / buffer_length) / (buffer_length - 1);
+	  msg2.right_variance = (right_sqrd - msg2.right * msg2.right / buffer_length) / (buffer_length - 1);
+	  msg2.avg_variance = (avg_sqrd - msg2.avg * msg2.avg / buffer_length) / (buffer_length - 1);
 	  msg2.left /= buffer_length;
 	  msg2.right /= buffer_length;
 	  msg2.avg /= buffer_length;
 	  wheelspeed_pub.publish(msg2);
+
+	  /*
+	  // Formula is http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Compensated_variant
+	  double sum2 = 0;
+	  double sum3 = 0;
+	  for (int i = 0; i < buffer_length; ++i)
+	  {
+		sum2 += (wheelspeed_buffer[i].left - msg2.left) * (wheelspeed_buffer[i].left - msg2.left);
+		sum3 += (wheelspeed_buffer[i].left - msg2.left);
+	  }
+	  msg2.left_std = sum2;
+	  msg2.right_std = sum3;
+	  msg2.avg_std = sqrt((sum2 - sum3 * sum3 / n)/(n - 1))
+	  */
 
 	  /*
 	  // First, publish the displacement of the coordinate frame translating with the robot
