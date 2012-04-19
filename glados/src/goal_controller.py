@@ -93,7 +93,7 @@ class goalControl():
         
         self.sub = rospy.Subscriber("odom", glados.msg.odometry, self.subscription_handler)
         
-        #TODO:sub to gpsd and compass!!
+        #TODO:sub to gpsd and compass to get current pos and heading
 
         self.pid = pid()
         self.rate = 1.0
