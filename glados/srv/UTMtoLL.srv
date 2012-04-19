@@ -1,0 +1,7 @@
+float64 northing
+float64 easting
+# Use 11S for Los Angeles, 10S for San Mateo
+string zone
+---
+float64 latitude
+float64 longitude
