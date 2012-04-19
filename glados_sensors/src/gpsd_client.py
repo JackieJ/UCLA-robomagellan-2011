@@ -11,6 +11,7 @@ from gps import *
 import roslib; roslib.load_manifest('gps_common')
 import rospy
 from  gps_common.msg import *
+import yaml
 
 class GpsClient():
 	def __init__(self):
@@ -32,6 +33,19 @@ class GpsClient():
 			try:
 				while True:
 					self.current_value = self.session.next()
+					
+					#print self.current_value
+					
+					'''if raw_input() == 'i':
+						wayPoints_list = yaml.load(file('../../waypoints.yaml','r'))
+						newData = {
+							'latitude':self.current_value['lat'],
+							'longitude':self.current_value['lon']
+							}
+						print newData
+						wayPoints_list.append(newData)
+						yaml.load(wayPoints_list,file('../../waypoints.yaml','w'))
+					'''
                 			time.sleep(0.2) # tune this, you might not get values that quicklya
 					print >> sys.stderr, self.get_current_value()
 					self.publish()
@@ -54,6 +68,9 @@ class GpsClient():
 		pass
 
 if __name__ == '__main__':
+	#log in waypoints, init
+	#yaml.dump([],file('../../waypoints.yaml','w'))
+	
 	gpsp = GpsClient()
 	try:
 		gpsp.run()
