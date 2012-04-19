@@ -51,7 +51,7 @@ class gladosMotor{
   ros::Publisher custom_odom_pub;
   ros::Publisher odom_pub;
   ros::Publisher wheelspeed_pub;
-  tf::TransformBroadcaster odom_broadcaster
+  tf::TransformBroadcaster odom_broadcaster;
   // Save our refresh rate so we can buffer our wheelspeed info for 1s
   int refreshRate;
   wheelspeed_info *wheelspeed_buffer;
