@@ -193,7 +193,9 @@ void gladosMotor::refresh()
 		vtheta = (theta - old_theta) / dt;
 
 		// Since all odometry is 6DOF we'll need a quaternion created from yaw
-		geometry_msgs::Quaternion odom_quat = tf::createQuaternionFromYaw(theta);
+		//geometry_msgs::Quaternion odom_quat = tf::createQuaternionFromYaw(theta);
+		geometry_msgs::Quaternion odom_quat;
+		tf::quaternionTFToMsg(tf::createQuaternionFromYaw(theta), odom_quat);
 
 		/* Unused */
 		// First, we'll publish the transform over tf
