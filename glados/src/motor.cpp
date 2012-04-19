@@ -85,7 +85,7 @@ public:
 
 gladosMotor::gladosMotor(int _refreshRate) :
     refreshRate(_refreshRate),
-    wheelbase(0.57 /* m */), wheelDiameter(0.361 /* m */), motor_gain(20.585),
+    wheelbase(0.569 /* m */), wheelDiameter(0.361 /* m */), motor_gain(20.585),
     x(0), y(0), theta(0),
 	vx(0), vy(0), vtheta(0),
 	left_accumulated(0), right_accumulated(0),
@@ -209,28 +209,47 @@ void gladosMotor::refresh()
 		odom_trans.transform.translation.z = 0.0;
 		odom_trans.transform.rotation = odom_quat;
 
-		//send the transform
+		// send the transform
 		odom_broadcaster.sendTransform(odom_trans);
 		/**/
 
-		//next, we'll publish the odometry message over ROS
+		// next, we'll publish the odometry message over ROS
 		nav_msgs::Odometry odom;
 		odom.header.stamp = now;
 		odom.header.frame_id = "odom"; // Unused
 
-		//set the position
+		// set the position
 		odom.pose.pose.position.x = x;
 		odom.pose.pose.position.y = y;
 		odom.pose.pose.position.z = 0.0;
 		odom.pose.pose.orientation = odom_quat;
 
-		//set the velocity
+		// set the velocity
 		odom.child_frame_id = "base_link"; // Unused
 		odom.twist.twist.linear.x = vx;
 		odom.twist.twist.linear.y = vy;
 		odom.twist.twist.angular.z = vtheta;
 
-		//publish the message
+		// Set the covariance matrices
+		// 0.4% due to uncertainty in our wheel diameter measurement
+		// TODO: Is this the correct (enough) way to calculate variance?
+		odom.pose.covariance(0, 0) = (x - old_x) * (x - old_x) * (0.004 * 0.004); // m^2
+		odom.pose.covariance(1, 1) = (y - old_y) * (y - old_y) * (0.004 * 0.004);
+		odom.pose.covariance(2, 2) = 99999; // not measured
+		odom.pose.covariance(3, 3) = 99999;
+		odom.pose.covariance(4, 4) = 99999;
+		// For small values of x, atan(x) is about equal to x
+		odom.pose.covariance(5, 5) = (theta - old_theta) * (theta - old_theta) * (0.004 * 0.004);
+
+		// TODO: Is diving by dt^2 correct? It makes the units agree, at least.
+		odom.twist.covariance(0, 0) = odom.pose.covariance(0, 0) / (dt * dt); // (m/s)^2
+		odom.twist.covariance(1, 1) = odom.pose.covariance(1, 1) / (dt * dt);
+		odom.twist.covariance(2, 2) = 99999; // not measured
+		odom.twist.covariance(3, 3) = 99999;
+		odom.twist.covariance(4, 4) = 99999;
+		odom.twist.covariance(5, 5) = odom.pose.covariance(5, 5) / (dt * dt);
+
+		// publish the message
 		odom_pub.publish(odom);
 
 
