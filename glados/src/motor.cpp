@@ -20,13 +20,40 @@ using namespace std;
   #define PI 3.14159265358979 // double precision gives 15-17 digits
 #endif
 
+class wheelspeed_info
+{
+public:
+  wheelspeed_info() : left(0), right(0) { }
+  wheelspeed_info(double left, double right) : left(left), right(right) { }
+  wheelspeed_info(const wheelspeed_info& wsi) : left(wsi.left), right(wsi.right) { }
+  wheelspeed_info& operator=(const wheelspeed_info& rhs)
+  {
+	  if (this != &rhs)
+	  {
+		  left = rhs.left;
+		  right = rhs.right;
+	  }
+	  return *this;
+  }
+  ~wheelspeed_info() { }
+
+  double left;
+  double right;
+};
+
 class gladosMotor{
   AX3500 ax3500;
+  ros::Subscriber vel_sub;
   ros::Publisher custom_odom_pub;
   ros::Publisher odom_pub;
   ros::Publisher wheelspeed_pub;
-  const double wheelbase; // in m
-  const double wheelDiameter; // in m
+  // Save our refresh rate so we can buffer our wheelspeed info for 1s
+  int refreshRate;
+  wheelspeed_info *wheelspeed_buffer;
+
+  double wheelbase; // in m
+  double wheelDiameter; // in m
+  double mps_to_motor_command; // char per (meters per second)
 
   double x;
   double y;
@@ -41,7 +68,7 @@ class gladosMotor{
   double right_accumulated;
 
 public:
-  gladosMotor();
+  gladosMotor(int _refreshRate);
   ~gladosMotor();
   void setStationaryPose(double x, double y, double theta);
   void setMotorSpeed(const geometry_msgs::Twist::ConstPtr& msg);
@@ -49,16 +76,21 @@ public:
   void initMotorController();
 };
 
-gladosMotor::gladosMotor() : x(0), y(0), theta(0),
-                             vx(0), vy(0), vtheta(0),
-                             left_accumulated(0), right_accumulated(0),
-                             wheelbase(1.2 /* m */), wheelDiameter(0.35 /* m */)
+gladosMotor::gladosMotor(int _refreshRate) :
+    refreshRate(_refreshRate),
+    wheelbase(1.2 /* m */), wheelDiameter(0.35 /* m */), mps_to_motor_command(212),
+    x(0), y(0), theta(0),
+	vx(0), vy(0), vtheta(0),
+	left_accumulated(0), right_accumulated(0)
 {
+  // Create a 1-second buffer for our wheelspeed publisher
+  wheelspeed_buffer = new wheelspeed_info[refreshRate];
+  
   ros::NodeHandle n;
-  ros::Subscriber sub = n.subscribe("/cmd_vel", 1000, &gladosMotor::setMotorSpeed, this);
+  vel_sub = n.subscribe("/cmd_vel", 1000, &gladosMotor::setMotorSpeed, this);
   custom_odom_pub = n.advertise<glados::odometry>("/odometry", 1000);
-  ros::Publisher odom_pub = n.advertise<nav_msgs::Odometry>("odom", 50);
-  ros::Publisher wheelspeed_pub = n.advertise<glados::wheelspeed>("wheelspeed", 50);
+  odom_pub = n.advertise<nav_msgs::Odometry>("odom", 50);
+  wheelspeed_pub = n.advertise<glados::wheelspeed>("wheelspeed", 50);
 
   
   previousRefresh = ros::Time::now();
@@ -66,6 +98,7 @@ gladosMotor::gladosMotor() : x(0), y(0), theta(0),
   ros::Duration(0.001).sleep();
 
   // Open the motor controller
+  cout << "Opening AX3500 motor controller" << endl;
   bool isOpen = false;
   const char* USB_SERIAL_PORTS[4] = {"/dev/ttyUSB0", "/dev/ttyUSB1", "/dev/ttyUSB2", "/dev/ttyUSB3"};
 
@@ -73,31 +106,33 @@ gladosMotor::gladosMotor() : x(0), y(0), theta(0),
   int serial_port_counter = 0;
   while (!isOpen)
   {
+  	cout << "Using port " << USB_SERIAL_PORTS[serial_port_counter] << endl;
     isOpen = ax3500.Open(USB_SERIAL_PORTS[serial_port_counter], true);
     serial_port_counter++;
     if (serial_port_counter == sizeof(USB_SERIAL_PORTS) / sizeof(USB_SERIAL_PORTS[0]))
     	serial_port_counter = 0;
   }
-
+  
+  cout << "Port successfully opened" << endl;
   ax3500.ResetEncoder(AX3500::ENCODER_BOTH);
-
 }
 
 gladosMotor::~gladosMotor()
 {
+  delete[] wheelspeed_buffer;
   ax3500.Close();
 }
 
 void gladosMotor::setMotorSpeed(const geometry_msgs::Twist::ConstPtr& msg)
 {
+  cout << "Got motor speed: " << msg->linear.x << ", " << msg->angular.z << endl;
   // Convert Twist msg into the robot's base-local coordinate frame "base_footprint"
   // This is only necessary if the Twist message has a header_id other than base_footprint
 
   // Convert from m/s to char
-  const double char_per_mps = 100;
-  char linear  = (char)(msg->linear.x * char_per_mps);
+  char linear  = (char)(msg->linear.x * mps_to_motor_command);
   // use wheelbase/2 to convert from rad/s to m/s at the edge of the wheel
-  char angular = (char)(msg->angular.z * (wheelbase/2) * char_per_mps);
+  char angular = (char)(msg->angular.z * (wheelbase/2) * mps_to_motor_command);
   
   ax3500.SetSpeed(AX3500::CHANNEL_LINEAR, -angular);
   ax3500.SetSpeed(AX3500::CHANNEL_STEERING, -linear);
@@ -126,9 +161,36 @@ void gladosMotor::refresh()
   msg.heading = (left_accumulated - right_accumulated) / wheelbase * PI * 360;
   custom_odom_pub.publish(msg);
 
+  // Report wheel speed information
   glados::wheelspeed msg2;
-  msg2.left = l_ticks / dt;
-  msg2.right = r_ticks / dt;
+  // Buffer 1s
+  int buffer_length = refreshRate;
+  wheelspeed_info wsi;
+  wsi.left = left;
+  wsi.right = right;
+  for (int i = 0; i < buffer_length - 1; ++i)
+    wheelspeed_buffer[i+1] = wheelspeed_buffer[i];
+  wheelspeed_buffer[0] = wsi;
+  // Compute statistics
+  double left_sqrd = 0;
+  double right_sqrd = 0;
+  double avg_sqrd = 0;
+  for (int i = 0; i < buffer_length; ++i)
+  {
+	msg2.left += wheelspeed_buffer[i].left;
+	msg2.right += wheelspeed_buffer[i].right;
+	msg2.avg += (wheelspeed_buffer[i].left + wheelspeed_buffer[i].right) / 2;
+	left_sqrd += wheelspeed_buffer[i].left * wheelspeed_buffer[i].left;
+	right_sqrd += wheelspeed_buffer[i].right * wheelspeed_buffer[i].right;
+	avg_sqrd += (wheelspeed_buffer[i].left + wheelspeed_buffer[i].right) *
+			(wheelspeed_buffer[i].left + wheelspeed_buffer[i].right) / 4;
+  }
+  msg2.left_std = sqrt((left_sqrd - buffer_length * msg2.left * msg2.left) / (buffer_length - 1));
+  msg2.right_std = sqrt((right_sqrd - buffer_length * msg2.right * msg2.right) / (buffer_length - 1));
+  msg2.avg_std = sqrt((avg_sqrd - buffer_length * msg2.avg * msg2.avg) / (buffer_length - 1));
+  msg2.left /= buffer_length;
+  msg2.right /= buffer_length;
+  msg2.avg /= buffer_length;
   wheelspeed_pub.publish(msg2);
 
   /*
@@ -185,6 +247,7 @@ void gladosMotor::refresh()
   odom_pub.publish(odom);
   */
 
+  previousRefresh = now;
 }
 
 void gladosMotor::setStationaryPose(double new_x, double new_y, double new_theta)
@@ -209,11 +272,11 @@ int main(int argc, char **argv)
 {
   ros::init(argc,argv,"motor_node");
 
-  gladosMotor motorNodeH;
-  
   int refreshRate = 10; // Hz
   ros::Rate r(refreshRate);
   
+  gladosMotor motorNodeH(refreshRate);
+
   while (ros::ok()) {
     motorNodeH.refresh();
     ros::spinOnce();
