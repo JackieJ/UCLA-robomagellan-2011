@@ -1,18 +1,25 @@
 <launch>
-	<node name="motor" pkg="motor" type="motor_node" />
+	<node name="motor_node" pkg="glados" type="motor_node" />
 
-<!--   GPSD client information for connecting to  -->
+	<!-- GPSD client information for connecting to -->
  	<node name="gpsd_client" pkg="glados_sensors" type="gpsd_client.py"  />
-	<node name="gps_to_utm" pkg="gps_common" type="utm_odometry_node"  />
-
+	<node name="gps_to_utm" pkg="gps_common" type="utm_odometry_node">
+		<remap from="odom" to="odom_gps"/>
+		<remap from="fix" to="/gps/fix"/>
+		<param name="rot_covariance" value="99999" />
+		<param name="frame_id" value="base_footprint" />
+	</node>
+	<node name="imu" pkg="rosserial_python" type="serial_node.py" args="/dev/ttyUSB1" />
+	<!--<node name="utm_server" pkg="glados" type="utm_server"/>-->
+	<!-- TODO: This node subscribes to /odom_gps and /imu, and merges them into a single
+	           nav_msgs/Odometry msg on the /vo topic -->
+	<!--<node name="gps_imu_merge" pkg="glados" type="gps_imu_merge.py"/>-->
+	
 	<node name="cam" pkg="camera1394" type="camera1394_node" _video_mode="800x600_rgb8" _guid="00b09d01005c5123" />
 	<node name="threedcam" pkg="pmd_camcube_3_ros_pkg" type="pmd_camcube_3_node" />
-	  <node  name="pc_proc" pkg="glados_sensors" type="pc_proc">
-    		<remap from="input" to="/image_raw"/>
-    		<remap from="output" to="pctest"/>
-	  </node>	
+	<node  name="pc_proc" pkg="glados_sensors" type="pc_proc">
+		<remap from="input" to="/image_raw"/>
+		<remap from="output" to="pctest"/>
+	</node>
 
-
-	<node name="imu" pkg="rosserial_python" type="serial_node.py" args="/dev/ttyUSB1" />
-	
 </launch>
