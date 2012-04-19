@@ -93,6 +93,15 @@ gladosMotor::gladosMotor(int _refreshRate) :
   wheelspeed_pub = n.advertise<glados::wheelspeed>("wheelspeed", 50);
 
   
+  /*
+   * Before, without ros::Time::init() gave the error:
+   *
+   * what():  Cannot use ros::Time::now() before the first NodeHandle has been
+   * created or ros::start() has been called.  If this is a standalone app or
+   * test that just uses ros::Time and does not communicate over ROS, you may
+   * also call ros::Time::init().
+   */
+  ros::Time::init();
   previousRefresh = ros::Time::now();
   // Sleep for 1ms to avoid a divide by zero when calling refresh()
   ros::Duration(0.001).sleep();
