@@ -192,13 +192,23 @@ void gladosMotor::refresh()
 		avg_sqrd += (wheelspeed_buffer[i].left + wheelspeed_buffer[i].right) *
 				(wheelspeed_buffer[i].left + wheelspeed_buffer[i].right) / 4;
 	  }
-	  // Formula is variance = (sum(x^2) - sum(x)^2 / N) / (N - 1)
-	  msg2.left_variance = (left_sqrd - msg2.left * msg2.left / N) / (N - 1);
-	  msg2.right_variance = (right_sqrd - msg2.right * msg2.right / N) / (N - 1);
-	  msg2.avg_variance = (avg_sqrd - msg2.avg * msg2.avg / N) / (N - 1);
 	  msg2.left /= N;
 	  msg2.right /= N;
 	  msg2.avg /= N;
+
+	  msg2.left_variance = 0;
+	  msg2.right_variance = 0;
+	  msg2.avg_variance = 0;
+	  for (int i = 0; i < N; ++i)
+	  {
+		  msg2.left_variance += (wheelspeed_buffer[i].left - msg2.left) * (wheelspeed_buffer[i].left - msg2.left);
+		  msg2.right_variance += (wheelspeed_buffer[i].right - msg2.right) * (wheelspeed_buffer[i].right - msg2.right);
+		  msg2.avg_variance += (((wheelspeed_buffer[i].left + wheelspeed_buffer[i].right) / 2 - msg2.avg) *
+				                ((wheelspeed_buffer[i].left + wheelspeed_buffer[i].right) / 2 - msg2.avg));
+	  }
+	  msg2.left_variance = msg2.left_variance / (N - 1);
+	  msg2.right_variance = msg2.right_variance / (N - 1);
+	  msg2.avg_variance = msg2.avg_variance / (N - 1);
 	  wheelspeed_pub.publish(msg2);
 
 	  /*
