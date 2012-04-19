@@ -13,6 +13,8 @@
 //#include <stdlib.h>
 
 #define TICKS_PER_REVOLUTION 10000
+// This is for the wheelspeed topic, the length of the moving average window
+#define WHEELSPEED_BUFFER_LENGTH 10 // s
 
 using namespace std;
 
@@ -86,7 +88,7 @@ gladosMotor::gladosMotor(int _refreshRate) :
 	time_inited(false)
 {
   // Create a 1-second buffer for our wheelspeed publisher
-  wheelspeed_buffer = new wheelspeed_info[refreshRate];
+  wheelspeed_buffer = new wheelspeed_info[refreshRate * WHEELSPEED_BUFFER_LENGTH];
 
   ros::NodeHandle n;
   vel_sub = n.subscribe("/cmd_vel", 1000, &gladosMotor::setMotorSpeed, this);
@@ -169,18 +171,18 @@ void gladosMotor::refresh()
 	  // Report wheel speed information
 	  glados::wheelspeed msg2;
 	  // Buffer 1s
-	  int buffer_length = refreshRate;
+	  int N = refreshRate * WHEELSPEED_BUFFER_LENGTH;
 	  wheelspeed_info wsi;
 	  wsi.left = left;
 	  wsi.right = right;
-	  for (int i = 0; i < buffer_length - 1; ++i)
+	  for (int i = 0; i < N - 1; ++i)
 		wheelspeed_buffer[i+1] = wheelspeed_buffer[i];
 	  wheelspeed_buffer[0] = wsi;
 	  // Compute statistics
 	  double left_sqrd = 0;
 	  double right_sqrd = 0;
 	  double avg_sqrd = 0;
-	  for (int i = 0; i < buffer_length; ++i)
+	  for (int i = 0; i < N; ++i)
 	  {
 		msg2.left += wheelspeed_buffer[i].left;
 		msg2.right += wheelspeed_buffer[i].right;
@@ -190,28 +192,14 @@ void gladosMotor::refresh()
 		avg_sqrd += (wheelspeed_buffer[i].left + wheelspeed_buffer[i].right) *
 				(wheelspeed_buffer[i].left + wheelspeed_buffer[i].right) / 4;
 	  }
-	  // Formula is variance = (sum(x^2) - sum(x)^2 / n) / (n - 1)
-	  msg2.left_variance = (left_sqrd - msg2.left * msg2.left / buffer_length) / (buffer_length - 1);
-	  msg2.right_variance = (right_sqrd - msg2.right * msg2.right / buffer_length) / (buffer_length - 1);
-	  msg2.avg_variance = (avg_sqrd - msg2.avg * msg2.avg / buffer_length) / (buffer_length - 1);
-	  msg2.left /= buffer_length;
-	  msg2.right /= buffer_length;
-	  msg2.avg /= buffer_length;
+	  // Formula is variance = (sum(x^2) - sum(x)^2 / N) / (N - 1)
+	  msg2.left_variance = (left_sqrd - msg2.left * msg2.left / N) / (N - 1);
+	  msg2.right_variance = (right_sqrd - msg2.right * msg2.right / N) / (N - 1);
+	  msg2.avg_variance = (avg_sqrd - msg2.avg * msg2.avg / N) / (N - 1);
+	  msg2.left /= N;
+	  msg2.right /= N;
+	  msg2.avg /= N;
 	  wheelspeed_pub.publish(msg2);
-
-	  /*
-	  // Formula is http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Compensated_variant
-	  double sum2 = 0;
-	  double sum3 = 0;
-	  for (int i = 0; i < buffer_length; ++i)
-	  {
-		sum2 += (wheelspeed_buffer[i].left - msg2.left) * (wheelspeed_buffer[i].left - msg2.left);
-		sum3 += (wheelspeed_buffer[i].left - msg2.left);
-	  }
-	  msg2.left_std = sum2;
-	  msg2.right_std = sum3;
-	  msg2.avg_std = sqrt((sum2 - sum3 * sum3 / n)/(n - 1))
-	  */
 
 	  /*
 	  // First, publish the displacement of the coordinate frame translating with the robot
