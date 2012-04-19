@@ -1,7 +1,7 @@
 <package>
   <description brief="glados">
 
-     glados-state estimation
+     GLaDOS
 
   </description>
   <author>Jackie Jin</author>
@@ -10,10 +10,13 @@
   <url>http://ros.org/wiki/glados</url>
   <depend package="roscpp"/>
   <depend package="rospy"/>
+  <!-- message depends -->
   <depend package="std_msgs"/>
+  <depend package="nav_msgs"/>
+  <depend package="geometry_msgs"/>
+  <depend package="tf"/>
+  <!-- glados stack depends -->
   <depend package="glados_sensors"/>
   <depend package="libax3500"/>
-  <depend package="geometry_msgs"/>
 </package>
-
 
