@@ -185,6 +185,7 @@ void gladosMotor::refresh()
 	avg_sqrd += (wheelspeed_buffer[i].left + wheelspeed_buffer[i].right) *
 			(wheelspeed_buffer[i].left + wheelspeed_buffer[i].right) / 4;
   }
+  // Formula is sqrt((sum(x^2) - n * sum(x)^2) / (n - 1))
   msg2.left_std = sqrt((left_sqrd - buffer_length * msg2.left * msg2.left) / (buffer_length - 1));
   msg2.right_std = sqrt((right_sqrd - buffer_length * msg2.right * msg2.right) / (buffer_length - 1));
   msg2.avg_std = sqrt((avg_sqrd - buffer_length * msg2.avg * msg2.avg) / (buffer_length - 1));
