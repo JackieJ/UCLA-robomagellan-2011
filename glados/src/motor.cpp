@@ -14,7 +14,7 @@
 
 #define TICKS_PER_REVOLUTION 10000
 // This is for the wheelspeed topic, the length of the moving average window
-#define WHEELSPEED_BUFFER_LENGTH 10 // s
+#define WHEELSPEED_BUFFER_LENGTH 2 // s
 
 using namespace std;
 
