@@ -233,21 +233,21 @@ void gladosMotor::refresh()
 		// Set the covariance matrices
 		// 0.4% due to uncertainty in our wheel diameter measurement
 		// TODO: Is this the correct (enough) way to calculate variance?
-		odom.pose.covariance(0, 0) = (x - old_x) * (x - old_x) * (0.004 * 0.004); // m^2
-		odom.pose.covariance(1, 1) = (y - old_y) * (y - old_y) * (0.004 * 0.004);
-		odom.pose.covariance(2, 2) = 99999; // not measured
-		odom.pose.covariance(3, 3) = 99999;
-		odom.pose.covariance(4, 4) = 99999;
+		odom.pose.covariance[6*0 + 0] = (x - old_x) * (x - old_x) * (0.004 * 0.004); // m^2
+		odom.pose.covariance[6*1 + 1] = (y - old_y) * (y - old_y) * (0.004 * 0.004);
+		odom.pose.covariance[6*2 + 2] = 99999; // not measured
+		odom.pose.covariance[6*3 + 3] = 99999;
+		odom.pose.covariance[6*4 + 4] = 99999;
 		// For small values of x, atan(x) is about equal to x
-		odom.pose.covariance(5, 5) = (theta - old_theta) * (theta - old_theta) * (0.004 * 0.004);
+		odom.pose.covariance[6*5 + 5] = (theta - old_theta) * (theta - old_theta) * (0.004 * 0.004);
 
 		// TODO: Is diving by dt^2 correct? It makes the units agree, at least.
-		odom.twist.covariance(0, 0) = odom.pose.covariance(0, 0) / (dt * dt); // (m/s)^2
-		odom.twist.covariance(1, 1) = odom.pose.covariance(1, 1) / (dt * dt);
-		odom.twist.covariance(2, 2) = 99999; // not measured
-		odom.twist.covariance(3, 3) = 99999;
-		odom.twist.covariance(4, 4) = 99999;
-		odom.twist.covariance(5, 5) = odom.pose.covariance(5, 5) / (dt * dt);
+		odom.twist.covariance[6*0 + 0] = odom.pose.covariance[6*0 + 0] / (dt * dt); // (m/s)^2
+		odom.twist.covariance[6*1 + 1] = odom.pose.covariance[6*1 + 1] / (dt * dt);
+		odom.twist.covariance[6*2 + 2] = 99999; // not measured
+		odom.twist.covariance[6*3 + 3] = 99999;
+		odom.twist.covariance[6*4 + 4] = 99999;
+		odom.twist.covariance[6*5 + 5] = odom.pose.covariance[6*5 + 5] / (dt * dt);
 
 		// publish the message
 		odom_pub.publish(odom);
