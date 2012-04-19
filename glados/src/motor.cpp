@@ -237,12 +237,12 @@ void gladosMotor::refresh()
 		// pose itself, instead the sensor sources publish how the covariance changes
 		// over time, i.e. the covariance on the velocity."
 		//
-		// Encoder variance, when moving, is about 1e-9 m^2 per second. When still, we
-		// expect no noise, so we use 1e-13 m^2 per second if v == 0. Estimating 0.4%
-		// uncertainty in our wheel diameter measurement, the resultant variance is
-		// the sum of the independent sources of noise.
+		// Encoder variance, when moving, is about 1e-7 m^2 per second. When still, we
+		// expect no noise, so we (arbitrarily) use 1e-12 m^2 per second if v == 0.
+		// Estimating 0.4% uncertainty in our wheel diameter measurement, the resultant
+		// variance is the sum of the independent sources of noise.
 		// TODO: Is this the correct (enough) way to calculate variance?
-		double enc_noise = (vx * vy == 0 ? 1e-13 / dt : 1e-9 / dt);
+		double enc_noise = (vx * vy == 0 ? 1e-12 / dt : 1e-7 / dt);
 		odom.twist.covariance[6*0 + 0] = vx * vx * (0.004 * 0.004) + enc_noise; // (m/s)^2
 		odom.twist.covariance[6*1 + 1] = vy * vy * (0.004 * 0.004) + enc_noise;
 		odom.twist.covariance[6*2 + 2] = 99999; // not measured
