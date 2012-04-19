@@ -29,6 +29,7 @@ Release
 *~
 *#
 .#*
+*.asv
 
 # ignore python compiled files
 *.pyc

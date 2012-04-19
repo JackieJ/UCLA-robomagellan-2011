@@ -81,7 +81,7 @@ public:
 
 gladosMotor::gladosMotor(int _refreshRate) :
     refreshRate(_refreshRate),
-    wheelbase(0.57 /* m */), wheelDiameter(0.35 /* m */), motor_gain(220),
+    wheelbase(0.57 /* m */), wheelDiameter(0.35 /* m */), motor_gain(21.2487),
     x(0), y(0), theta(0),
 	vx(0), vy(0), vtheta(0),
 	left_accumulated(0), right_accumulated(0),
