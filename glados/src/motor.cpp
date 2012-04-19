@@ -87,7 +87,7 @@ gladosMotor::gladosMotor(int _refreshRate) :
 {
   // Create a 1-second buffer for our wheelspeed publisher
   wheelspeed_buffer = new wheelspeed_info[refreshRate];
-  
+
   ros::NodeHandle n;
   vel_sub = n.subscribe("/cmd_vel", 1000, &gladosMotor::setMotorSpeed, this);
   custom_odom_pub = n.advertise<glados::odometry>("/odometry", 1000);
@@ -280,6 +280,15 @@ int main(int argc, char **argv)
   ros::init(argc,argv,"motor_node");
 
   int refreshRate = 10; // Hz
+  /*
+   * We need a call to init() here because ROS was throwing this exception at run-time:
+   *
+   * what():  Cannot use ros::Time::now() before the first NodeHandle has been
+   * created or ros::start() has been called.  If this is a standalone app or
+   * test that just uses ros::Time and does not communicate over ROS, you may
+   * also call ros::Time::init()
+   */
+  ros::Time::init();
   ros::Rate r(refreshRate);
   
   gladosMotor motorNodeH(refreshRate);
