@@ -3,7 +3,7 @@
 
 // Messages includes
 #include <nav_msgs/Odometry.h>
-#include <std_msgs/Float64.h>
+//#include <std_msgs/Float64.h>
 #include <geometry_msgs/Twist.h>
 #include "glados/odometry.h"
 #include "glados/wheelspeed.h"
@@ -21,6 +21,8 @@ using namespace std;
 #ifndef PI
   #define PI 3.14159265358979 // double precision gives 15-17 digits
 #endif
+
+typedef boost::shared_ptr<nav_msgs::Odometry const> OdomConstPtr;
 
 class wheelspeed_info
 {
@@ -49,12 +51,14 @@ class gladosMotor{
   ros::Publisher custom_odom_pub;
   ros::Publisher odom_pub;
   ros::Publisher wheelspeed_pub;
+  tf::TransformBroadcaster odom_broadcaster
   // Save our refresh rate so we can buffer our wheelspeed info for 1s
   int refreshRate;
   wheelspeed_info *wheelspeed_buffer;
 
   double wheelbase; // in m
-  double wheelDiameter; // in m
+  double wheelDiameter; // in m. This value doesn't have to be exact because our
+                        // experimentally-determined motor gain compensates for this
   double motor_gain; // char per (meters per second)
 
   double x;
@@ -81,7 +85,7 @@ public:
 
 gladosMotor::gladosMotor(int _refreshRate) :
     refreshRate(_refreshRate),
-    wheelbase(0.57 /* m */), wheelDiameter(0.35 /* m */), motor_gain(21.2487),
+    wheelbase(0.57 /* m */), wheelDiameter(0.361 /* m */), motor_gain(20.585),
     x(0), y(0), theta(0),
 	vx(0), vy(0), vtheta(0),
 	left_accumulated(0), right_accumulated(0),
@@ -147,26 +151,86 @@ void gladosMotor::refresh()
   }
   else
   {
-	  int l_ticks, r_ticks;
-	  // Use relative ticks, as it gives you ticks since last read
-	  ax3500.ReadEncoder(AX3500::ENCODER_1, AX3500::RELATIVE, l_ticks);
-	  ax3500.ReadEncoder(AX3500::ENCODER_2, AX3500::RELATIVE, r_ticks);
+		int l_ticks, r_ticks;
+		// Use relative ticks, as it gives you ticks since last read
+		ax3500.ReadEncoder(AX3500::ENCODER_1, AX3500::RELATIVE, l_ticks);
+		ax3500.ReadEncoder(AX3500::ENCODER_2, AX3500::RELATIVE, r_ticks);
 
-	  // Calculate dt
-	  ros::Time now = ros::Time::now();
-	  double dt = (now - previousRefresh).toSec();
+		// Calculate dt
+		ros::Time now = ros::Time::now();
+		double dt = (now - previousRefresh).toSec();
 
-	  double left = wheelDiameter * PI * l_ticks / TICKS_PER_REVOLUTION;
-	  double right = wheelDiameter * PI * r_ticks / TICKS_PER_REVOLUTION;
 
-	  // Jackie's custom odom message
-	  left_accumulated += left;
-	  right_accumulated += right;
-	  glados::odometry msg;
-	  msg.left = left_accumulated;
-	  msg.right = right_accumulated;
-	  msg.heading = (left_accumulated - right_accumulated) / wheelbase * PI * 360;
-	  custom_odom_pub.publish(msg);
+		double left = wheelDiameter * PI * l_ticks / TICKS_PER_REVOLUTION;
+		double right = wheelDiameter * PI * r_ticks / TICKS_PER_REVOLUTION;
+		// Encoder standard deviation is less than 1 part in a million
+		// Major source of error here is our wheel diameter measurement (+/- 0.4%)
+
+
+		// Jackie's custom odom message
+		left_accumulated += left;
+		right_accumulated += right;
+		glados::odometry msg;
+		msg.left = left_accumulated;
+		msg.right = right_accumulated;
+		//msg.heading = (left_accumulated - right_accumulated) / wheelbase * PI * 360; // DON'T USE THIS, IT'S WRONG
+		custom_odom_pub.publish(msg);
+
+
+		// First, publish the displacement of the coordinate frame translating with the robot
+		// Second, publish the displacement of the robot in that coordinate frame
+
+		// In the coordinate frame translating with the robot
+		// Forward displacement is (left + right) / 2
+		// Angular displacement is atan2(right - left, wheelbase)
+		double old_x = x, old_y = y, old_theta = theta;
+		x += (left + right) / 2 * cos(theta);
+		y += (left + right) / 2 * sin(theta);
+		theta += atan2(right - left, wheelbase);
+
+		vx = (x - old_x) / dt;
+		vy = (y - old_y) / dt;
+		vtheta = (theta - old_theta) / dt;
+
+		// Since all odometry is 6DOF we'll need a quaternion created from yaw
+		geometry_msgs::Quaternion odom_quat = tf::createQuaternionFromYaw(theta);
+
+		/* Unused */
+		// First, we'll publish the transform over tf
+		geometry_msgs::TransformStamped odom_trans;
+		odom_trans.header.stamp = now;
+		odom_trans.header.frame_id = "odom";
+		odom_trans.child_frame_id = "base_link";
+
+		odom_trans.transform.translation.x = x;
+		odom_trans.transform.translation.y = y;
+		odom_trans.transform.translation.z = 0.0;
+		odom_trans.transform.rotation = odom_quat;
+
+		//send the transform
+		odom_broadcaster.sendTransform(odom_trans);
+		/**/
+
+		//next, we'll publish the odometry message over ROS
+		nav_msgs::Odometry odom;
+		odom.header.stamp = now;
+		odom.header.frame_id = "odom"; // Unused
+
+		//set the position
+		odom.pose.pose.position.x = x;
+		odom.pose.pose.position.y = y;
+		odom.pose.pose.position.z = 0.0;
+		odom.pose.pose.orientation = odom_quat;
+
+		//set the velocity
+		odom.child_frame_id = "base_link"; // Unused
+		odom.twist.twist.linear.x = vx;
+		odom.twist.twist.linear.y = vy;
+		odom.twist.twist.angular.z = vtheta;
+
+		//publish the message
+		odom_pub.publish(odom);
+
 
 	  // Report wheel speed information
 	  glados::wheelspeed msg2;
@@ -211,60 +275,7 @@ void gladosMotor::refresh()
 	  msg2.avg_variance = msg2.avg_variance / (N - 1);
 	  wheelspeed_pub.publish(msg2);
 
-	  /*
-	  // First, publish the displacement of the coordinate frame translating with the robot
-	  // Second, publish the displacement of the robot in that coordinate frame
-
-	  // In the coordinate frame translating with the robot
-	  // Forward displacement is (left + right) / 2
-	  // Angular displacement is atan2(right - left, wheelbase)
-	  double old_x = x, old_y = y, old_theta = theta;
-	  x += (left + right) / 2 * cos(theta);
-	  y += (left + right) / 2 * sin(theta);
-	  theta += atan2(right - left, wheelbase);
-
-	  vx = (x - old_x) / dt;
-	  vy = (y - old_y) / dt;
-	  vtheta = (theta - old_theta) / dt;
-
-	  // Since all odometry is 6DOF we'll need a quaternion created from yaw
-	  geometry_msgs::Quaternion odom_quat = tf::createQuaternionFromYaw(theta);
-
-	  // First, we'll publish the transform over tf
-	  geometry_msgs::TransformStamped odom_trans;
-	  odom_trans.header.stamp = now;
-	  odom_trans.header.frame_id = "odom";
-	  odom_trans.child_frame_id = "base_link";
-
-	  odom_trans.transform.translation.x = x;
-	  odom_trans.transform.translation.y = y;
-	  odom_trans.transform.translation.z = 0.0;
-	  odom_trans.transform.rotation = odom_quat;
-
-	  //send the transform
-	  odom_broadcaster.sendTransform(odom_trans);
-
-	  //next, we'll publish the odometry message over ROS
-	  nav_msgs::Odometry odom;
-	  odom.header.stamp = current_time;
-	  odom.header.frame_id = "odom";
-
-	  //set the position
-	  odom.pose.pose.position.x = x;
-	  odom.pose.pose.position.y = y;
-	  odom.pose.pose.position.z = 0.0;
-	  odom.pose.pose.orientation = odom_quat;
-
-	//set the velocity
-	  odom.child_frame_id = "base_link";
-	  odom.twist.twist.linear.x = vx;
-	  odom.twist.twist.linear.y = vy;
-	  odom.twist.twist.angular.z = vth;
-
-	  //publish the message
-	  odom_pub.publish(odom);
-	  */
-
+	  // Save our timestamp for the next refresh
 	  previousRefresh = now;
   }
 }
