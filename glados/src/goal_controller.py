@@ -4,13 +4,15 @@
 import time
 import sys
 import math
-
+import yaml
 from gps import *
 
 import roslib; roslib.load_manifest('geometry_msgs')
 import rospy
 from  geometry_msgs.msg import *
 import glados.msg
+
+waypoints_list = yaml.load(file('../../waypoints.yaml','r'))
 
 class pid(object):
     def __init__(self):

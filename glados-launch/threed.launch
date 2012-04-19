@@ -1,0 +1,11 @@
+<launch>
+
+	<node name="threedcam" pkg="pmd_camcube_3_ros_pkg" type="pmd_camcube_3_node" >
+		
+	</node>
+	  <node  name="pc_proc" pkg="glados_sensors" type="pc_proc">
+    		<remap from="input" to="/depth_filtered"/>
+    		<remap from="output" to="pctest"/>
+	  </node>	
+	
+</launch>
