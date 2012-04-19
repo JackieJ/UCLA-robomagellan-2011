@@ -27,6 +27,8 @@ Release
 # ignore vim swp files and gedit temp files
 *.swp
 *~
+*#
+.#*
 
 # ignore python compiled files
 *.pyc
