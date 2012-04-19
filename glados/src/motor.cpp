@@ -55,7 +55,7 @@ class gladosMotor{
 
   double wheelbase; // in m
   double wheelDiameter; // in m
-  double mps_to_motor_command; // char per (meters per second)
+  double motor_gain; // char per (meters per second)
 
   double x;
   double y;
@@ -81,7 +81,7 @@ public:
 
 gladosMotor::gladosMotor(int _refreshRate) :
     refreshRate(_refreshRate),
-    wheelbase(0.57 /* m */), wheelDiameter(0.35 /* m */), mps_to_motor_command(220),
+    wheelbase(0.57 /* m */), wheelDiameter(0.35 /* m */), motor_gain(220),
     x(0), y(0), theta(0),
 	vx(0), vy(0), vtheta(0),
 	left_accumulated(0), right_accumulated(0),
@@ -129,9 +129,9 @@ void gladosMotor::setMotorSpeed(const geometry_msgs::Twist::ConstPtr& msg)
   // This is only necessary if the Twist message has a header_id other than base_footprint
 
   // Convert from m/s to char
-  char linear  = (char)(msg->linear.x * mps_to_motor_command);
+  char linear  = (char)(msg->linear.x * motor_gain);
   // use wheelbase/2 to convert from rad/s to m/s at the edge of the wheel
-  char angular = (char)(msg->angular.z * (wheelbase/2) * mps_to_motor_command);
+  char angular = (char)(msg->angular.z * (wheelbase/2) * motor_gain);
   
   ax3500.SetSpeed(AX3500::CHANNEL_LINEAR, -angular);
   ax3500.SetSpeed(AX3500::CHANNEL_STEERING, -linear);
