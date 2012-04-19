@@ -13,6 +13,8 @@
 //#include <stdlib.h>
 
 #define TICKS_PER_REVOLUTION 10000
+// This is for the wheelspeed topic, the length of the moving average window
+#define WHEELSPEED_BUFFER_LENGTH 10 // s
 
 using namespace std;
 
@@ -79,14 +81,14 @@ public:
 
 gladosMotor::gladosMotor(int _refreshRate) :
     refreshRate(_refreshRate),
-    wheelbase(1.2 /* m */), wheelDiameter(0.35 /* m */), mps_to_motor_command(212),
+    wheelbase(0.57 /* m */), wheelDiameter(0.35 /* m */), mps_to_motor_command(212),
     x(0), y(0), theta(0),
 	vx(0), vy(0), vtheta(0),
 	left_accumulated(0), right_accumulated(0),
 	time_inited(false)
 {
   // Create a 1-second buffer for our wheelspeed publisher
-  wheelspeed_buffer = new wheelspeed_info[refreshRate];
+  wheelspeed_buffer = new wheelspeed_info[refreshRate * WHEELSPEED_BUFFER_LENGTH];
 
   ros::NodeHandle n;
   vel_sub = n.subscribe("/cmd_vel", 1000, &gladosMotor::setMotorSpeed, this);
@@ -169,18 +171,18 @@ void gladosMotor::refresh()
 	  // Report wheel speed information
 	  glados::wheelspeed msg2;
 	  // Buffer 1s
-	  int buffer_length = refreshRate;
+	  int N = refreshRate * WHEELSPEED_BUFFER_LENGTH;
 	  wheelspeed_info wsi;
 	  wsi.left = left;
 	  wsi.right = right;
-	  for (int i = 0; i < buffer_length - 1; ++i)
+	  for (int i = 0; i < N - 1; ++i)
 		wheelspeed_buffer[i+1] = wheelspeed_buffer[i];
 	  wheelspeed_buffer[0] = wsi;
 	  // Compute statistics
 	  double left_sqrd = 0;
 	  double right_sqrd = 0;
 	  double avg_sqrd = 0;
-	  for (int i = 0; i < buffer_length; ++i)
+	  for (int i = 0; i < N; ++i)
 	  {
 		msg2.left += wheelspeed_buffer[i].left;
 		msg2.right += wheelspeed_buffer[i].right;
@@ -190,13 +192,23 @@ void gladosMotor::refresh()
 		avg_sqrd += (wheelspeed_buffer[i].left + wheelspeed_buffer[i].right) *
 				(wheelspeed_buffer[i].left + wheelspeed_buffer[i].right) / 4;
 	  }
-	  // Formula is sqrt((sum(x^2) - n * sum(x)^2) / (n - 1))
-	  msg2.left_std = sqrt((left_sqrd - buffer_length * msg2.left * msg2.left) / (buffer_length - 1));
-	  msg2.right_std = sqrt((right_sqrd - buffer_length * msg2.right * msg2.right) / (buffer_length - 1));
-	  msg2.avg_std = sqrt((avg_sqrd - buffer_length * msg2.avg * msg2.avg) / (buffer_length - 1));
-	  msg2.left /= buffer_length;
-	  msg2.right /= buffer_length;
-	  msg2.avg /= buffer_length;
+	  msg2.left /= N;
+	  msg2.right /= N;
+	  msg2.avg /= N;
+
+	  msg2.left_variance = 0;
+	  msg2.right_variance = 0;
+	  msg2.avg_variance = 0;
+	  for (int i = 0; i < N; ++i)
+	  {
+		  msg2.left_variance += (wheelspeed_buffer[i].left - msg2.left) * (wheelspeed_buffer[i].left - msg2.left);
+		  msg2.right_variance += (wheelspeed_buffer[i].right - msg2.right) * (wheelspeed_buffer[i].right - msg2.right);
+		  msg2.avg_variance += (((wheelspeed_buffer[i].left + wheelspeed_buffer[i].right) / 2 - msg2.avg) *
+				                ((wheelspeed_buffer[i].left + wheelspeed_buffer[i].right) / 2 - msg2.avg));
+	  }
+	  msg2.left_variance = msg2.left_variance / (N - 1);
+	  msg2.right_variance = msg2.right_variance / (N - 1);
+	  msg2.avg_variance = msg2.avg_variance / (N - 1);
 	  wheelspeed_pub.publish(msg2);
 
 	  /*
