@@ -6,6 +6,7 @@
 #include <std_msgs/Float64.h>
 #include <geometry_msgs/Twist.h>
 #include "glados/odometry.h"
+#include "glados/wheelspeed.h"
 
 #include "AX3500.h"
 #include <math.h>
@@ -23,6 +24,7 @@ class gladosMotor{
   AX3500 ax3500;
   ros::Publisher custom_odom_pub;
   ros::Publisher odom_pub;
+  ros::Publisher wheelspeed_pub;
   const double wheelbase; // in m
   const double wheelDiameter; // in m
 
@@ -56,6 +58,8 @@ gladosMotor::gladosMotor() : x(0), y(0), theta(0),
   ros::Subscriber sub = n.subscribe("/cmd_vel", 1000, &gladosMotor::setMotorSpeed, this);
   custom_odom_pub = n.advertise<glados::odometry>("/odometry", 1000);
   ros::Publisher odom_pub = n.advertise<nav_msgs::Odometry>("odom", 50);
+  ros::Publisher wheelspeed_pub = n.advertise<glados::wheelspeed>("wheelspeed", 50);
+
   
   previousRefresh = ros::Time::now();
   // Sleep for 1ms to avoid a divide by zero when calling refresh()
@@ -121,6 +125,11 @@ void gladosMotor::refresh()
   msg.right = right_accumulated;
   msg.heading = (left_accumulated - right_accumulated) / wheelbase * PI * 360;
   custom_odom_pub.publish(msg);
+
+  glados::wheelspeed msg2;
+  msg2.left = l_ticks / dt;
+  msg2.right = r_ticks / dt;
+  wheelspeed_pub.publish(msg2);
 
   /*
   // First, publish the displacement of the coordinate frame translating with the robot
