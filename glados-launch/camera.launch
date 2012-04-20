@@ -1,0 +1,8 @@
+<launch>
+	<!-- Stub launch file for testing out the Dragonfly camera -->
+	<node name="camera1394_node" pkg="camera1394" type="camera1394_node">
+		<param name="guid" value="00b09d01005c5123"/>
+		<param name="video_mode" value="1024x768_rgb8"/>
+	</node>
+</launch>
+
