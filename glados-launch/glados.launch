@@ -1,37 +1,51 @@
 <launch>
+	<!-- Motor node. Provides motion and broadcasts in odom frame of reference -->
 	<node name="motor_node" pkg="glados" type="motor_node" />
 
-	<!-- GPSD client information for connecting to -->
+	<!-- GPS and compass code for a fixed-world frame of reference -->
  	<node name="gpsd_client" pkg="glados_sensors" type="gpsd_client.py"  />
 	<node name="gps_to_utm" pkg="gps_common" type="utm_odometry_node">
-		<remap from="odom" to="odom_gps"/>
-		<remap from="fix" to="/gps/fix"/>
+		<remap from="odom" to="odom_gps" />
+		<remap from="fix" to="/gps/fix" />
 		<param name="rot_covariance" value="99999" />
+		<!-- TODO: what should we set the base_footprint to (needs Kalman Filter insight) -->
 		<param name="frame_id" value="base_footprint" />
 	</node>
 	<node name="imu" pkg="rosserial_python" type="serial_node.py" args="/dev/ttyUSB1" />
-	<!--<node name="utm_server" pkg="glados" type="utm_server"/>-->
 	<!-- TODO: This node subscribes to /odom_gps and /imu, and merges them into a single
 	           nav_msgs/Odometry msg on the /vo topic -->
-	<!--<node name="gps_imu_merge" pkg="glados" type="gps_imu_merge.py"/>-->
+	<!--<node name="gps_imu_node" pkg="glados" type="gps_imu_node.py" />-->
+	
+	<!-- Fuse the local and fixed-world frames of reference into /odom_combined -->
 	<!--
 	<node pkg="robot_pose_ekf" type="robot_pose_ekf" name="robot_pose_ekf">
-		<param name="output_frame" value="odom_combined"/>
-		<param name="freq" value="10.0"/>
-		<param name="sensor_timeout" value="1.0"/>
-		<param name="odom_used" value="true"/>
-		<param name="imu_used" value="false"/>
-		<param name="vo_used" value="true"/>
-		<param name="debug" value="false"/>
-		<param name="self_diagnose" value="false"/>
+		<param name="output_frame" value="odom_combined" />
+		<param name="freq" value="10.0" />
+		<param name="sensor_timeout" value="1.0" />
+		<param name="odom_used" value="true" />
+		<param name="imu_used" value="false" />
+		<param name="vo_used" value="true" />
+		<param name="debug" value="false" />
+		<param name="self_diagnose" value="false" />
 	</node>
 	-->
 	
-	<node name="cam" pkg="camera1394" type="camera1394_node" _video_mode="800x600_rgb8" _guid="00b09d01005c5123" />
-	<node name="threedcam" pkg="pmd_camcube_3_ros_pkg" type="pmd_camcube_3_node" />
-	<node  name="pc_proc" pkg="glados_sensors" type="pc_proc">
-		<remap from="input" to="/image_raw"/>
-		<remap from="output" to="pctest"/>
+	<!-- Cone-targetting nodes -->
+	<node name="camera1394_node" pkg="camera1394" type="camera1394_node">
+		<param name="video_mode" value="1024x768_rgb8" />
+		<param name="guid" value="00b09d01005c5123" />
 	</node>
-
+	<node name="cone_rgb_node" pkg="glados" type="cone_rgb_node" />
+	<node name="threedcam" pkg="pmd_camcube_3_ros_pkg" type="pmd_camcube_3_node" />
+	<node name="pc_proc" pkg="glados_sensors" type="pc_proc">
+		<remap from="input" to="/image_raw" />
+		<remap from="output" to="pctest" />
+	</node>
+	
+	<!-- Navigation node and servers -->
+	<node name="pid" pkg="glados" type="goal_controller.py" />
+	<node name="utm_server" pkg="glados" type="utm_server" />
+	
+	<!-- Tie it all together with our FSM -->
+	<!-- <node name="fsm_node" pkg="glados" type="fsm_node.py" /> -->
 </launch>
