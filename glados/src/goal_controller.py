@@ -91,8 +91,11 @@ class pid(object):
             self.output['angular']['z'] = 0.
         '''
         #difference calculation
-        self.err_x = goal_pos['x'] - current_pos['x']
-        self.err_y = goal_pos['y'] - current_pos['y']
+        
+        err_x = goal_pos['x'] - current_pos['x']
+        self.err_x = err_x <= math.fabs(0.01) ? 0 : err_x
+        err_y = goal_pos['y'] - current_pos['y']
+        self.err_y = err_y <= math.fabs(0.01) ? 0 : err_x
         distance = float(math.sqrt(self.err_x*self.err_x+self.err_y*self.err_y))
         self.target_angle = (90 - (math.atan2(self.err_y,self.err_x)*(180/math.pi))) - (current_pos['heading']*(180/math.pi))
         print self.target_angle
@@ -164,7 +167,7 @@ class goalControl():
         #print glados_sensors.__dict__.keys()
         self.goNextWaypoint()
         while (not rospy.is_shutdown()):#and (self.current_pos['getData']) and self.go :
-            if (self.current_pos['x'] - self.current_goal_pos['x'] <= 0.01) and (self.current_pos['y'] - self.current_goal_pos['y'] <= 0.01):
+            if (math.fabs(self.current_pos['x'] - self.current_goal_pos['x']) <= 0.01) and (math.fabs(self.current_pos['y'] - self.current_goal_pos['y']) <= 0.01):
                 self.goNextWaypoint()
                 
             self.pid.calc(self.current_pos, self.current_goal_pos)
