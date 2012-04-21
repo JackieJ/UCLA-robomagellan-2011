@@ -4,5 +4,7 @@
 		<param name="guid" value="00b09d01005c5123"/>
 		<param name="video_mode" value="1024x768_rgb8"/>
 	</node>
+	 <node name="cam_cone_finder" pkg="glados_sensors" type="cam_cone_find.py">
+        </node>
 </launch>
 

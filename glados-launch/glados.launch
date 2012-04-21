@@ -35,7 +35,13 @@
 		<param name="video_mode" value="1024x768_rgb8" />
 		<param name="guid" value="00b09d01005c5123" />
 	</node>
-	<node name="cone_rgb_node" pkg="glados" type="cone_rgb_node" />
+	
+	<!--<node name="cone_rgb_node" pkg="glados" type="cone_rgb_node" />-->
+	<node name="cam_cone_finder" pkg="glados_sensors" type="cam_cone_find.py">
+        </node>
+
+
+
 	<node name="threedcam" pkg="pmd_camcube_3_ros_pkg" type="pmd_camcube_3_node" />
 	<node name="pc_proc" pkg="glados_sensors" type="pc_proc">
 		<remap from="input" to="/image_raw" />

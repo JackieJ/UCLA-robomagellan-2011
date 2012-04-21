@@ -25,6 +25,8 @@ float StdDevMulThreshold;
 bool AmplitudeFilterOn;
 float AmplitudeThreshold;
 
+int derez_factor = 10;
+
 class PointCloudToUDP
 {
 public:
@@ -108,7 +110,10 @@ public:
 			  end =  cloud->points.size();
 		
   		pclouds::pCloud chunkCloud;
-	  	for (int i=start; i< end;i++){
+	  	for (int i=start; i< end;i= i + derez_factor){
+			if (i>end)
+				i = end;
+			
 			if (cloud->points[i].z < .8)
 				continue;
 			if (cloud->points[i].z > 2.5)
@@ -146,7 +151,7 @@ public:
 		sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 		if (sockfd < 0)
 			perror("ERROR opening socket");
-		server = gethostbyname("192.168.1.141");
+		server = gethostbyname("10.10.100.10");  //192.168.1.141
 		if (server == NULL) {
 			fprintf(stderr,"ERROR, no such host\n");
 			exit(0);

@@ -6,15 +6,34 @@ import sys
 import math
 import yaml
 from gps import *
-
 import roslib; roslib.load_manifest('geometry_msgs')
 roslib.load_manifest('nav_msgs')
+roslib.load_manifest('gps_common')
+from gps_common.msg import *
 import rospy
 from  geometry_msgs.msg import *
 from nav_msgs.msg import *
-import glados
+from glados.srv import *
+roslib.load_manifest('glados_sensors')
+from glados_sensors.msg import *
 
 waypoints_list = yaml.load(file('../../waypoints.yaml','r'))
+
+
+def LLtoUTMConverter(lat,lon):
+    rospy.wait_for_service('LLtoUTM')
+    try:
+        lltoutm = rospy.ServiceProxy('LLtoUTM', LLtoUTM)
+        #print lltoutm.__dict__.keys()
+        #print lltoutm.request_class.__dict__.keys()
+        #request = lltoutm.request_class()
+        #response = lltoutm.response_class()
+        response = lltoutm(lat,lon)
+        return response
+        
+    except rospy.ServiceException, e:
+        print "Service call failed: %s"%e
+        
 
 class pid(object):
     def __init__(self):
@@ -82,29 +101,33 @@ class pid(object):
         print self.output['angular']['z']
         
         if distance != 0.:
-            self.output['linear']['x'] = 1.
+            self.output['linear']['x'] = 1.5
             
 # http://cse.unl.edu/~carrick/courses/2011/496/lab2/lab2.html
 class goalControl():
     def __init__(self):
         rospy.init_node('pid')
         #test value        
-        self.goal_pos = [{'x':1.,'y':0.}]
-                
+        self.goal_pos = waypoints_list
+        self.current_goal_pos = {
+            "hasCone":False,
+            "x":0.,
+            "y":0.
+            }
         self.vel_pub = rospy.Publisher('cmd_vel', Twist)
-        
-        self.sub = rospy.Subscriber("odom", Odometry, self.subscription_handler)
-        
+        self.odom_sub = rospy.Subscriber('odom', Odometry, self.odom_handler)
         #TODO:sub to gpsd and compass to get current pos and heading
-
+        #self.gps_sub = rospy.Subscriber('gps/fix', GPSFix, gps_handler)
+        #self.imu_sub = rospy.Subscriber('imu', imu, imu_handler)
         self.pid = pid()
         self.rate = 1.0
+        self.go = True
         
         self.current_pos = {
             'getData':True,
             'x':0.,
             'y':0.,
-            'heading':-math.pi/2,
+            'heading':0,
             'linear':{
                 'x':0.,
                 'y':0.,
@@ -118,17 +141,36 @@ class goalControl():
             'left_v':0.,
             'right_v':0.
             }
-
-    def subscription_handler(self,data):
-        pass
+    def odom_handler(self, data):
+        print data
         
+    def gps_handler(self, data):
+        pass
+    
+    def imu_handler(self, data):
+        pass
+    
+    def goNextWaypoint(self):
+        if not self.goal_pos:
+            popout = self.goal_pos.pop(0)
+            llutmresponse = LLtoUTMConverter(popout['latitude'], popout['longitude'])
+            self.current_goal_pos['x'] = llutmresponse['easting']
+            self.cuurent_goal_pos['y'] = llutmresponse['northing']
+            self.go = True
+        else:
+            self.go = False
+            
     def run(self):
-        while not rospy.is_shutdown() and self.goal_pos and self.current_pos['getData'] == True:
-            self.pid.calc(self.current_pos, self.goal_pos[0])
+        #print glados_sensors.__dict__.keys()
+        self.goNextWaypoint()
+        while (not rospy.is_shutdown()):#and (self.current_pos['getData']) and self.go :
+            if (self.current_pos['x'] - self.current_goal_pos['x'] <= 0.01) and (self.current_pos['y'] - self.current_goal_pos['y'] <= 0.01):
+                self.goNextWaypoint()
+                
+            self.pid.calc(self.current_pos, self.current_goal_pos)
             #increment current pos
             #self.current_pos['heading'] += (self.pid.output['angular']['z'])*self.pid.Kp
-            
-            
+
             #record twist msg
             self.current_pos['linear']['x'] = self.pid.output['linear']['x']
             self.current_pos['angular']['z'] = self.pid.output['angular']['z']
@@ -158,11 +200,25 @@ class goalControl():
             
             self.publish(twistOutput)
             rospy.sleep(self.rate)
+            
+        #stop the robot once it's runing out
+        twistOutput = Twist()
+        twistOutput.linear.x = 0.
+        twistOutput.linear.y = 0.
+        twistOutput.linear.z = 0.
+        twistOutput.angular.x = 0.
+        twistOutput.angular.y = 0.
+        twistOutput.angular.z = 0.
+        self.publish(twistOutput)
                 
     def publish(self,output):
         self.vel_pub.publish(output)
 
 if __name__ == '__main__':
+    '''latitude = waypoints_list[0]['latitude']
+    longitude = waypoints_list[0]['longitude']
+    response = LLtoUTMConverter(latitude, longitude)
+    print response'''
     g = goalControl()
     try:
         g.run()
