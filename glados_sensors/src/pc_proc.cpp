@@ -12,6 +12,8 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
+#include "pcloud.pb.h"
+
 typedef unsigned char byte;
 
 using namespace std;
@@ -22,7 +24,6 @@ float StdDevMulThreshold;
 
 bool AmplitudeFilterOn;
 float AmplitudeThreshold;
-
 
 class PointCloudToUDP
 {
@@ -51,22 +52,89 @@ public:
 //		ROS_ERROR_STREAM( "    " << cloud->points[0].x << " " 
 //				                 << cloud->points[0].y << " " 
 //			                     << cloud->points[0].z);
-		float * dist = new float [cloud->points.size()];
-		for (int i=0; i<cloud->points.size();i++){
-			dist[i]=cloud->points[i].x;
-		}
 		
-		sendUDP(dist);
-		for (int i=0; i<cloud->points.size();i++){
-			dist[i]=cloud->points[i].y;
-		}
-		sendUDP(dist);
-		for (int i=0; i<cloud->points.size();i++){
-			dist[i]=cloud->points[i].z;
-		}
-		sendUDP(dist);
-
-
+//		float * dist = new float [cloud->points.size()*3];
+//		for (int i=0; i< int(cloud->points.size()*3);i=i+3){
+//			dist[i]=cloud->points[i].x;
+//			dist[i+1]=cloud->points[i].y;
+//			dist[i+2]=cloud->points[i].z;
+//		}
+//		
+//		int numColumns = 200;
+//		int numRows = 200;
+//		int xsize = 100;
+//		int ysize = 100;
+//		int mult  = 2;
+//		int n;
+	   
+	   
+	   
+		////////////////////////////////////////////////
+	   
+//		pclouds::pCloud ncloud;
+////	   int cloudsize = int(cloud->points.size());
+//	   int cloudsize = 10;
+//	   
+//	for (int i=0; i< cloudsize;i++){
+//		pclouds::Point* p = ncloud.add_points();
+//		p->set_x(cloud->points[i].x);
+//		p->set_x(cloud->points[i].y);
+//		p->set_z(cloud->points[i].z);		
+//		ROS_ERROR_STREAM( "sending" << p);
+//	}
+	   
+// 	  uint16_t dist_low[xsize][ysize];
+// 	  // take in an array of floats
+// 	  for (int x=0; x<xsize; x++){
+// 	          for (int y=0; y<ysize; y++){
+// 	                  dist_low[x][y] = static_cast<uint16_t> ((dist[y*mult * numColumns + x * mult  ] /10.) * 65536) ;
+// 	          }
+// 	  }
+//	  
+// 	  const byte *send_buff = reinterpret_cast<const byte *>(dist);
+//	  int bufsize = (cloud->points.size()*3);
+		
+//	  ROS_ERROR_STREAM( "sending" << cloud->points.size() << " points ");
+	  ROS_ERROR_STREAM( "sending" << cloud->points.size() << " points ");
+	  
+ 	  write(sockfd, "1" , 1 );
+	  int chunksize = 450;
+	  
+	  for (int chunk=0; chunk <= (cloud->points.size()); chunk=chunk+chunksize){
+	  	
+		  int start = chunk;
+	  	  int end = chunk + chunksize;
+		  if (cloud->points.size()<=end)
+			  end =  cloud->points.size();
+		
+  		pclouds::pCloud chunkCloud;
+	  	for (int i=start; i< end;i++){
+			if (cloud->points[i].z < .8)
+				continue;
+			if (cloud->points[i].z > 2.5)
+				continue;
+			pclouds::Point* p = chunkCloud.add_points();
+	  		p->set_x(cloud->points[i].x);
+	  		p->set_y(cloud->points[i].y);
+	  		p->set_z(cloud->points[i].z);		
+	  	}
+//		sock.sendto( , (UDP_IP, UDP_PORT) )
+		string buffer;
+		chunkCloud.SerializeToString(&buffer);
+//		write(sockfd, (buffer.data()), buffer.length() );
+//		ROS_ERROR_STREAM( "sending" << buffer.length() << "bytes");
+		write(sockfd, (buffer.c_str()), buffer.length() );
+	}	
+        
+	////////////////////////////////////////////
+	  
+// 	  n = write(sockfd, send_buff, bufsize );
+// 	  n = write(sockfd, &(send_buff[bufsize]), bufsize  );
+// 	  n = write(sockfd, &(send_buff[bufsize*2]), bufsize );
+// 	  n = write(sockfd, &(send_buff[bufsize*3]), bufsize );
+// 	  ROS_ERROR_STREAM( "sent" << bufsize<< " bytes ");
+	  
+//		sendUDP(dist);
   }
   void setupSocket(){
 		// SOCKET CODE
@@ -98,6 +166,33 @@ public:
 			perror("ERROR writing to socket");
 		bzero(buffer,256);
   }
+  
+  void sendUDPPoints(float dist[]){
+	   int numColumns = 200;
+	   int numRows = 200;
+	   int xsize = 100;
+	   int ysize = 100;
+	   int mult  = 2;
+	   int n;
+	   
+	  uint16_t dist_low[xsize][ysize];
+	  // take in an array of floats
+	  for (int x=0; x<xsize; x++){
+	          for (int y=0; y<ysize; y++){
+	                  dist_low[x][y] = static_cast<uint16_t> ((dist[y*mult * numColumns + x * mult  ] /10.) * 65536) ;
+	          }
+	  }
+	  const byte *send_buff = reinterpret_cast<const byte *>(dist_low);
+	  
+	  int bufsize = xsize * ysize * 2 / 4;
+	  n = write(sockfd, "start" , strlen("start") );
+	  n = write(sockfd,send_buff, bufsize );
+	  n = write(sockfd, &(send_buff[bufsize]), bufsize  );
+	  n = write(sockfd, &(send_buff[bufsize*2]), bufsize );
+	  n = write(sockfd, &(send_buff[bufsize*3]), bufsize );
+	  ROS_ERROR_STREAM( "sent" << bufsize<< " bytes ");
+  }
+  
   
   void sendUDP(float dist[]){
 	   int numColumns = 200;

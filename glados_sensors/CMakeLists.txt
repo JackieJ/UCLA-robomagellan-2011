@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.4.6)
 include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 set(CMAKE_VERBOSE_MAKEFILE true)
-
+FIND_PACKAGE(protobuf)
 project(GLaDOS)
 
 # Set the build type.  Options are:
@@ -11,7 +11,7 @@ project(GLaDOS)
 #  RelWithDebInfo : w/ debug symbols, w/ optimization
 #  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
 set(ROS_BUILD_TYPE RelWithDebInfo)
-
+#
 rosbuild_init()
 
 #set the default path for built executables to the "bin" directory
@@ -19,17 +19,22 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 #set the default path for built libraries to the "lib" directory
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
+include_directories(${PROJECT_SOURCE_DIR}/proto)
+
 #uncomment if you have defined messages
 rosbuild_genmsg()
 #uncomment if you have defined services
 #rosbuild_gensrv()
 
 #common commands for building c++ executables and libraries
-#rosbuild_add_library(${PROJECT_NAME} src/pc.cpp)
-#target_link_libraries(${PROJECT_NAME} another_library)
+rosbuild_add_library(pclouds proto/pcloud.pb.cc)
+
+#target_link_libraries(pc_proc protobuf)
 #rosbuild_add_boost_directories()
 #rosbuild_link_boost(${PROJECT_NAME} thread)
 #rosbuild_add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
 
 rosbuild_add_executable(pc_proc src/pc_proc.cpp)
+target_link_libraries(pc_proc protobuf)
+target_link_libraries(pc_proc pclouds)

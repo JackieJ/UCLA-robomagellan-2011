@@ -15,5 +15,6 @@
   <depend package="sensor_msgs"/>
   <depend package="pcl" />
   <depend package="pcl_ros"/>
+  <depend package="cv_bridge" />
 </package>
 
