@@ -4,13 +4,14 @@
 
 	<!-- GPS and compass code for a fixed-world frame of reference -->
  	<node name="gpsd_client" pkg="glados_sensors" type="gpsd_client.py"  />
-	<node name="gps_to_utm" pkg="gps_common" type="utm_odometry_node">
+<!--	<node name="gps_to_utm" pkg="gps_common" type="utm_odometry_node">
 		<remap from="odom" to="odom_gps" />
 		<remap from="fix" to="/gps/fix" />
 		<param name="rot_covariance" value="99999" />
-		<!-- TODO: what should we set the base_footprint to (needs Kalman Filter insight) -->
+		 TODO: what should we set the base_footprint to (needs Kalman Filter insight) 
 		<param name="frame_id" value="base_footprint" />
 	</node>
+-->
 	<node name="imu" pkg="rosserial_python" type="serial_node.py" args="/dev/ttyUSB1" />
 	<!-- TODO: This node subscribes to /odom_gps and /imu, and merges them into a single
 	           nav_msgs/Odometry msg on the /vo topic -->
@@ -42,11 +43,12 @@
 
 
 
-	<node name="threedcam" pkg="pmd_camcube_3_ros_pkg" type="pmd_camcube_3_node" />
+	<!-- <node name="threedcam" pkg="pmd_camcube_3_ros_pkg" type="pmd_camcube_3_node" />
 	<node name="pc_proc" pkg="glados_sensors" type="pc_proc">
 		<remap from="input" to="/image_raw" />
 		<remap from="output" to="pctest" />
 	</node>
+        -->
 	
 	<!-- Navigation node and servers -->
 	<node name="pid" pkg="glados" type="goal_controller.py" />
