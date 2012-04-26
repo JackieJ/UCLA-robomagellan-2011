@@ -31,21 +31,24 @@ class GpsClient():
 			try:
 				while True:
 					self.current_value = self.session.next()
-					print >> sys.stderr, self.get_current_value()
-					if 'lat' in self.current_value and 'lon' in self.current_value:
-						self.publish()
+					#print >> sys.stderr, self.get_current_value()
+					#print >>sys.stderr, self.current_value['lat'],self.current_value['lon']
+					#if 'lat' in self.current_value and 'lon' in self.current_value:
+					self.publish()
 			except StopIteration:
+				print >>sys.stderr, "StopIteration"
 				pass
 	
 	def publish(self):
-		#try:
-			#self.current_value['lat']
-			#self.current_fix.latitude = self.current_value['lat']
-			#self.current_fix.longitude = self.current_value['lon']
-		#except Exception as err:
-		#	print >>sys.stderr, err
+#		print >>sys.stderr,"publish"
+		try:
+			self.current_fix.latitude = self.current_value['lat']
+			self.current_fix.longitude = self.current_value['lon']
+		#	print >>sys.stderr
+		except Exception as err:
+			print >>sys.stderr, err
 		self.fixpub.publish(self.current_fix)
-		self.statuspub.publish(GPSStatus(self.current_status))
+		#self.statuspub.publish(GPSStatus(self.current_status))
 		pass
 
 if __name__ == '__main__':

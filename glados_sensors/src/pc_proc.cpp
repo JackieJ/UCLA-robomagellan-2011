@@ -2,6 +2,7 @@
 #include <ros/ros.h>
 //Image message
 #include <sensor_msgs/Image.h>
+#include <std_msgs/Float32.h>
 //pcl::toROSMsg
 #include <pcl/io/pcd_io.h>
 //stl stuff
@@ -36,7 +37,7 @@ public:
 		  return; //return if the cloud is not dense!
 	    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
 	  	pcl::fromROSMsg(*msg, *cloud);
-	
+		
 //	  for (size_t i = 0; i < 10000; ++i)
 //	  {
 ////	    cloud->points[i].x = 1024 * rand () / (RAND_MAX + 1.0f);
@@ -68,10 +69,16 @@ public:
 //		int ysize = 100;
 //		int mult  = 2;
 //		int n;
-	   
-	   
-	   
-		////////////////////////////////////////////////
+		
+		float max_Y,cone_center;
+		for (int i=0; i< int(cloud->points.size());i++){
+			if (max_Y>cloud->points[i].y){
+				cone_center=cloud->points[i].x;
+				max_Y = cloud->points[i].y;
+			}
+		}
+		
+	   cone_depthcenter_pub.publish(cone_center);
 	   
 //		pclouds::pCloud ncloud;
 ////	   int cloudsize = int(cloud->points.size());
@@ -123,6 +130,7 @@ public:
 	  		p->set_y(cloud->points[i].y);
 	  		p->set_z(cloud->points[i].z);		
 	  	}
+		
 //		sock.sendto( , (UDP_IP, UDP_PORT) )
 		string buffer;
 		chunkCloud.SerializeToString(&buffer);
@@ -227,8 +235,8 @@ public:
   PointCloudToUDP () : cloud_topic_("input"),image_topic_("output")
   {
     sub_ = nh_.subscribe (cloud_topic_, 30, &PointCloudToUDP::cloud_cb, this);
-    image_pub_ = nh_.advertise<sensor_msgs::Image> (image_topic_, 30);
-
+    cone_depthcenter_pub = nh_.advertise<std_msgs::Float32>("/cone/depthcenter", 1000);
+	
     //print some info about the node
 //    std::string r_ct = nh_.resolveName (cloud_topic_);
     std::string r_it = nh_.resolveName (image_topic_);
@@ -245,7 +253,7 @@ private:
   std::string cloud_topic_; //default input
   std::string image_topic_; //default output
   ros::Subscriber sub_; //cloud subscriber
-  ros::Publisher image_pub_; //image message publisher
+  ros::Publisher cone_depthcenter_pub; //image message publisher
   int sockfd;
 };
 
