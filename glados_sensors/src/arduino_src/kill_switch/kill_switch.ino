@@ -11,7 +11,7 @@
     ^-  current handling this process is at /devttyUSB1
         [make sure IDE settings are correct before upload]
   rostopic echo dead
- */
+*/
 
 #include <ros.h>
 #include <std_msgs/Bool.h>
@@ -40,7 +40,7 @@ void setup()
   pinMode(death_pin, INPUT);
 
   //Enable the pullup resistor on the button
-  PORTD |= (1<<PD7);
+  PORTD |= (1<<PD5);
 
   //The button is a normally button
   death_last_reading = ! digitalRead(death_pin);
