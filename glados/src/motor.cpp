@@ -214,7 +214,7 @@ void gladosMotor::refresh()
 		nav_msgs::Odometry odom;
 		odom.header.stamp = now;
 		odom.header.frame_id = "odom"; // Unused
-
+		
 		// set the position
 		odom.pose.pose.position.x = x;
 		odom.pose.pose.position.y = y;
@@ -295,17 +295,17 @@ void gladosMotor::refresh()
 	  msg2.right_variance = 0;
 	  msg2.avg_variance = 0;
 	  for (int i = 0; i < N; ++i)
-	  {
-		  msg2.left_variance += (wheelspeed_buffer[i].left - msg2.left) * (wheelspeed_buffer[i].left - msg2.left);
-		  msg2.right_variance += (wheelspeed_buffer[i].right - msg2.right) * (wheelspeed_buffer[i].right - msg2.right);
-		  msg2.avg_variance += (((wheelspeed_buffer[i].left + wheelspeed_buffer[i].right) / 2 - msg2.avg) *
-				                ((wheelspeed_buffer[i].left + wheelspeed_buffer[i].right) / 2 - msg2.avg));
-	  }
+	    {
+	      msg2.left_variance += (wheelspeed_buffer[i].left - msg2.left) * (wheelspeed_buffer[i].left - msg2.left);
+	      msg2.right_variance += (wheelspeed_buffer[i].right - msg2.right) * (wheelspeed_buffer[i].right - msg2.right);
+	      msg2.avg_variance += (((wheelspeed_buffer[i].left + wheelspeed_buffer[i].right) / 2 - msg2.avg) *
+				    ((wheelspeed_buffer[i].left + wheelspeed_buffer[i].right) / 2 - msg2.avg));
+	    }
 	  msg2.left_variance = msg2.left_variance / (N - 1);
 	  msg2.right_variance = msg2.right_variance / (N - 1);
 	  msg2.avg_variance = msg2.avg_variance / (N - 1);
 	  wheelspeed_pub.publish(msg2);
-
+	  
 	  // Save our timestamp for the next refresh
 	  previousRefresh = now;
   }
@@ -313,26 +313,26 @@ void gladosMotor::refresh()
 
 void gladosMotor::setStationaryPose(double new_x, double new_y, double new_theta)
 {
-	x = new_x;
-	y = new_y;
-	theta = new_theta;
-	vx = 0;
-	vy = 0;
-	vtheta = 0;
-
-	// Not used outside the custom odom message
-	left_accumulated = 0;
-	right_accumulated = 0;
-
-	previousRefresh = ros::Time::now();
-	// Sleep for 1ms to avoid a divide by zero when calling refresh()
-	ros::Duration(0.001).sleep();
+  x = new_x;
+  y = new_y;
+  theta = new_theta;
+  vx = 0;
+  vy = 0;
+  vtheta = 0;
+  
+  // Not used outside the custom odom message
+  left_accumulated = 0;
+  right_accumulated = 0;
+  
+  previousRefresh = ros::Time::now();
+  // Sleep for 1ms to avoid a divide by zero when calling refresh()
+  ros::Duration(0.001).sleep();
 }
 
 int main(int argc, char **argv)
 {
   ros::init(argc,argv,"motor_node");
-
+  
   int refreshRate = 10; // Hz
   /*
    * We need a call to init() here because ROS was throwing this exception at run-time:
